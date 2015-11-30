@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dekelund2/unbrokenwing/compiler/definition"
+	"github.com/dekelund/unbrokenwing/compiler/definition"
 )
 
 func Example_NewDefinition() {
@@ -33,7 +33,7 @@ import "strings"
 	// package main
 	//
 	// import (
-	// 	. "github.com/dekelund2/unbrokenwing/unbrokenwing"
+	// 	. "github.com/dekelund/unbrokenwing/unbrokenwing"
 	// 	"github.com/dekelund/stdres"
 	// 	"strconv"
 	// 	"os"

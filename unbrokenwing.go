@@ -7,8 +7,8 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
-	"github.com/dekelund2/unbrokenwing/compiler/definition"
-	"github.com/dekelund2/unbrokenwing/compiler/feature"
+	"github.com/dekelund/unbrokenwing/compiler/definition"
+	"github.com/dekelund/unbrokenwing/compiler/feature"
 )
 
 func main() {

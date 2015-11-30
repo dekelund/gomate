@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/dekelund/stdres"
-	. "github.com/dekelund2/unbrokenwing/unbrokenwing"
+	. "github.com/dekelund/unbrokenwing/unbrokenwing"
 )
 
 func Example_NewDefinition() {

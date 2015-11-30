@@ -36,7 +36,7 @@ func main() {
 	}
 
 	setup()
-	feature := NewFeature((*FeatureFile)(fd))
+	feature := NewFeature(fd)
 	suite := NewSuite()
 	t := testing.T{}
 	suite.Test(*feature, &t)

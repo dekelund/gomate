@@ -8,7 +8,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
 	"github.com/dekelund2/unbrokenwing/compiler/definition"
-	"github.com/dekelund2/unbrokenwing/compiler/featuredir"
+	"github.com/dekelund2/unbrokenwing/compiler/feature"
 )
 
 func main() {
@@ -70,7 +70,7 @@ func testCmd(c *cli.Context) {
 		stdres.DisableColor()
 	}
 
-	fdList, err := featuredir.ParseDir(path, defPattern, debug)
+	fdList, err := feature.ParseDir(path, defPattern, debug)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -113,8 +113,8 @@ func testCmd(c *cli.Context) {
 		defer definitions.Remove()
 	}
 
-	for _, feature := range fdList.Features {
-		fd, err := os.Open(feature)
+	for _, file := range fdList.Features {
+		fd, err := os.Open(file)
 		if err != nil {
 			log.Fatal(err)
 		}

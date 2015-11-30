@@ -1,5 +1,5 @@
-// Package featuredir provides ...
-package featuredir
+// Package feature provides ...
+package feature
 
 import (
 	"errors"

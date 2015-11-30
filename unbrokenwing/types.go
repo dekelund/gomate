@@ -2,13 +2,10 @@ package unbrokenwing
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"testing"
 )
-
-type FeatureFile os.File
 
 type Args map[string]string
 

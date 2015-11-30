@@ -3,8 +3,8 @@ package unbrokenwing
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
-	"os"
 	"regexp"
 	"testing"
 
@@ -27,8 +27,8 @@ var emptyLineRexexp = regexp.MustCompile("^[\t ]+$")
 // "Feature:" followed by feature name, description
 // and different scenarios. All scenarios including
 // description are then returned as a Feature.
-func NewFeature(file *FeatureFile) (feature *Feature) {
-	scanner := bufio.NewScanner((*os.File)(file))
+func NewFeature(reader io.Reader) (feature *Feature) {
+	scanner := bufio.NewScanner(reader)
 
 	for scanner.Scan() {
 		line := scanner.Text()

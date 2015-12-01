@@ -86,18 +86,18 @@ func getDefinitonPaths(path string, debug bool) (list []string) {
 	return list
 }
 
+// List represents the files and subdirectories files from a feature folder, including step definitions.
 type List struct {
 	Features    []string
 	Definitions []string
 	DefDir      string
 }
 
-// TestFolder make use of tools input data to generate definions binary and features struct.
+// ParseDir make use of tools input data to generate definions binary and features struct.
 // fpath represents a relative path, to a .feature file or a dir with .feature files.
 // defPattern represents definitions folders name, shall be located in features directory.
 // Function returns a list of features found in features file/dir and corresponding definitions.
-// An error will be returned if error occur, if not caller are responsible to call Remove()
-// method in definitions struct.
+// An error will be returned if error occur, if not caller are responsible to call Definitions.Remove().
 func ParseDir(fpath, defPattern string, debug bool) (list List, err error) {
 	var yes bool
 

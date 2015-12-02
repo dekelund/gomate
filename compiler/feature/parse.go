@@ -119,7 +119,7 @@ func ParseDir(fpath, defPattern string, debug bool) (list List, err error) {
 		list.Features = []string{fpath}
 	}
 
-	list.Definitions = getDefinitonPaths(fpath, debug)
+	list.Definitions = getDefinitonPaths(filepath.Join(fpath, defPattern), debug)
 	return
 }
 

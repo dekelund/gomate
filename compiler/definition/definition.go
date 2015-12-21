@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/dekelund/unbrokenwing/global"
 )
 
 var emptyLineRexexp = regexp.MustCompile("^[\t ]*$")
@@ -125,14 +127,14 @@ func NewDefinition(in io.Reader) Definition {
 // NewDefinitions reads and parse "defs" assuming that each element contains content from a step definition file.
 // Lines defining package names are ommited from resulting Definition instance.
 // Caller has the possibility to enable debug output via method argument.
-func NewDefinitions(defs []io.Reader, debug bool) Definitions {
+func NewDefinitions(defs []io.Reader) Definitions {
 	definitions := stepDefinitions{}
 
 	for _, reader := range defs {
 		definitions = append(definitions, NewDefinition(reader))
 	}
 
-	dir, cmd := definitions.compile(debug)
+	dir, cmd := definitions.compile()
 	return Definitions{definitions, dir, cmd}
 }
 
@@ -143,11 +145,11 @@ func (definitions Definitions) Remove() {
 	os.Remove(definitions.tmpDir)
 }
 
-func (definitions stepDefinitions) compile(debug bool) (string, string) {
+func (definitions stepDefinitions) compile() (string, string) {
 	var err error
 	var output []byte
 
-	dir, testCode, testFile := definitions.store(debug)
+	dir, testCode, testFile := definitions.store()
 
 	goimport := exec.Command("goimports", "-w=true", testCode)
 	gofmt := exec.Command("go", "fmt", testCode)
@@ -168,7 +170,7 @@ func (definitions stepDefinitions) compile(debug bool) (string, string) {
 	return dir, testFile
 }
 
-func (definitions stepDefinitions) store(debug bool) (dir, testCode, testFile string) {
+func (definitions stepDefinitions) store() (dir, testCode, testFile string) {
 	var err error
 
 	if dir, err = ioutil.TempDir("", "brokenwing-test-"); err != nil {
@@ -182,7 +184,7 @@ func (definitions stepDefinitions) store(debug bool) (dir, testCode, testFile st
 		log.Panic(err.Error())
 	}
 
-	if debug {
+	if global.Debug {
 		fmt.Println("Wrote '", string(testCode), "'. File will not be deleted, due to debug mode.")
 	}
 

@@ -68,7 +68,7 @@ func getDefinitonPaths(path string, debug bool) (list []string) {
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".go") {
 				if debug {
-					fmt.Printf("Ignoring non-feature file: '%s'\n", string(name))
+					fmt.Printf("Ignoring non-definition file: '%s'\n", string(name))
 				}
 				continue
 			}

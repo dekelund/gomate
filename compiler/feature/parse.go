@@ -17,11 +17,11 @@ import (
 func getFeaturePaths(path string) (list []string) {
 	dir, err := os.Open(path)
 
-	defer dir.Close()
-
 	if err != nil {
 		log.Fatal("Error opening input file:", err)
 	}
+
+	defer dir.Close()
 
 	for names, err := dir.Readdirnames(10); err != io.EOF; names, err = dir.Readdirnames(10) {
 		if err != nil {

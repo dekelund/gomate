@@ -10,8 +10,10 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
+
 	"github.com/dekelund/unbrokenwing/compiler/definition"
 	"github.com/dekelund/unbrokenwing/compiler/feature"
+	"github.com/dekelund/unbrokenwing/global"
 )
 
 // Foreground colors
@@ -31,12 +33,18 @@ const (
 	PathSeparator = string(os.PathSeparator)
 )
 
-func main() {
+var CWD string = "."
+
+func init() {
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Panic(err)
 	}
 
+	CWD = cwd
+}
+
+func main() {
 	app := cli.NewApp()
 	app.Name = "unbrokenwing"
 	app.Usage = "Run behaviour driven tests as Gherik features"
@@ -57,7 +65,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "dir",
 			Value: ".",
-			Usage: "Relative path, to a feature-file or -directory (Current value: " + cwd + ").",
+			Usage: "Relative path, to a feature-file or -directory (Current value: " + CWD + ").",
 		},
 	}
 
@@ -95,36 +103,37 @@ func main() {
 	app.Run(os.Args)
 }
 
-func listFeatureFilesCmd(c *cli.Context) {
-	var debug bool = c.GlobalBool("debug")
-	var defPattern string = c.GlobalString("step-definitions")
-	var path string = c.GlobalString("dir")
-	var features []string
+func setupGlobals(c *cli.Context) {
+	global.Debug = c.GlobalBool("debug")
+	global.PPrint = c.GlobalBool("pretty")
+	global.DefPattern = c.GlobalString("step-definitions")
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Panic(err)
+	global.CWD = CWD
+
+	if global.PPrint {
+		stdres.EnableColor()
+	} else {
+		stdres.DisableColor()
 	}
+}
 
-	_, features = parseDir(path, defPattern, debug)
+func listFeatureFilesCmd(c *cli.Context) {
+	setupGlobals(c)
+	dir := c.GlobalString("dir")
+
+	_, features := parseDir(dir, global.DefPattern, global.Debug)
 
 	for i, feature := range features {
-		fmt.Printf("\t%2d) %s\n", i, strings.TrimPrefix(feature, cwd+PathSeparator))
+		path := CWD + PathSeparator
+		fmt.Printf("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
 	}
 }
 
 func listFeaturesCmd(c *cli.Context) {
-	var debug bool = c.GlobalBool("debug")
-	var defPattern string = c.GlobalString("step-definitions")
-	var path string = c.GlobalString("dir")
-	var features []string
+	setupGlobals(c)
+	dir := c.GlobalString("dir")
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Panic(err)
-	}
-
-	_, features = parseDir(path, defPattern, debug)
+	_, features := parseDir(dir, global.DefPattern, global.Debug)
 
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
@@ -145,17 +154,16 @@ func listFeaturesCmd(c *cli.Context) {
 		text = strings.Replace(text, " When ", blue+" When "+reset, -1)
 		text = strings.Replace(text, " Then ", yellow+" Then "+reset, -1)
 
-		fmt.Print("\n# ", strings.TrimPrefix(feature, cwd+PathSeparator), "\n", text, "\n")
+		path := CWD + PathSeparator
+		fmt.Print("\n# ", strings.TrimPrefix(feature, path), "\n", text, "\n")
 	}
 }
 
 func printDefinitionsCodeCmd(c *cli.Context) {
-	var debug bool = c.GlobalBool("debug")
-	var defPattern string = c.GlobalString("step-definitions")
-	var path string = c.GlobalString("dir")
-	var definitions definition.Definitions
+	setupGlobals(c)
+	dir := c.GlobalString("dir")
 
-	definitions, _ = parseDir(path, defPattern, debug)
+	definitions, _ := parseDir(dir, global.DefPattern, global.Debug)
 
 	fmt.Println(definitions.Code())
 }
@@ -163,21 +171,12 @@ func printDefinitionsCodeCmd(c *cli.Context) {
 // testCmd search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
 // Behaviours might be undefined, which will end up as red text in stdout if the context c has pretty print enabled.
 func testCmd(c *cli.Context) {
-	var debug bool = c.GlobalBool("debug")
-	var pretty bool = c.GlobalBool("pretty")
-	var defPattern string = c.GlobalString("step-definitions")
+	setupGlobals(c)
+	dir := c.GlobalString("dir")
 
-	var path string = c.GlobalString("dir")
+	definitions, features := parseDir(dir, global.DefPattern, global.Debug)
 
-	if pretty {
-		stdres.EnableColor()
-	} else {
-		stdres.DisableColor()
-	}
-
-	definitions, features := parseDir(path, defPattern, debug)
-
-	if !debug {
+	if !global.Debug {
 		defer definitions.Remove()
 	}
 
@@ -188,7 +187,7 @@ func testCmd(c *cli.Context) {
 		}
 		defer fd.Close()
 
-		definitions.Run(fd, pretty, debug)
+		definitions.Run(fd, global.PPrint, global.Debug)
 	}
 }
 

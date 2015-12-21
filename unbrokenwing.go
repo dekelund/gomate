@@ -75,28 +75,28 @@ func main() {
 			Aliases: []string{},
 			Usage:   "List feature files to STDOUT",
 			Flags:   []cli.Flag{},
-			Action:  listFeatureFilesCmd,
+			Action:  listFeatureFilesCMD,
 		},
 		{
 			Name:    "features",
 			Aliases: []string{},
 			Usage:   "List features to STDOUT",
 			Flags:   []cli.Flag{},
-			Action:  listFeaturesCmd,
+			Action:  listFeaturesCMD,
 		},
 		{
 			Name:    "definitions",
 			Aliases: []string{"defs", "code"},
 			Usage:   "List behaviours to STDOUT",
 			Flags:   []cli.Flag{},
-			Action:  printDefinitionsCodeCmd,
+			Action:  printDefinitionsCodeCMD,
 		},
 		{
 			Name:    "test",
 			Aliases: []string{"t"},
 			Usage:   "Tests either a test directory with features in it, or a .feature file",
 			Flags:   []cli.Flag{},
-			Action:  testCmd,
+			Action:  testCMD,
 		},
 	}
 
@@ -117,7 +117,7 @@ func setupGlobals(c *cli.Context) {
 	}
 }
 
-func listFeatureFilesCmd(c *cli.Context) {
+func listFeatureFilesCMD(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
@@ -129,7 +129,7 @@ func listFeatureFilesCmd(c *cli.Context) {
 	}
 }
 
-func listFeaturesCmd(c *cli.Context) {
+func listFeaturesCMD(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
@@ -159,7 +159,7 @@ func listFeaturesCmd(c *cli.Context) {
 	}
 }
 
-func printDefinitionsCodeCmd(c *cli.Context) {
+func printDefinitionsCodeCMD(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
@@ -168,9 +168,9 @@ func printDefinitionsCodeCmd(c *cli.Context) {
 	fmt.Println(definitions.Code())
 }
 
-// testCmd search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
+// testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
 // Behaviours might be undefined, which will end up as red text in stdout if the context c has pretty print enabled.
-func testCmd(c *cli.Context) {
+func testCMD(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 

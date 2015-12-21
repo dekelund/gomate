@@ -196,7 +196,7 @@ func parseDir(path, defPattern string, debug bool) (definition.Definitions, []st
 	var list = feature.List{}
 	var defs = []io.Reader{}
 
-	if list, err = feature.ParseDir(path, defPattern, debug); err != nil {
+	if list, err = feature.ParseDir(path); err != nil {
 		log.Fatal(err)
 	}
 

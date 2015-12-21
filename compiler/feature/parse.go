@@ -10,9 +10,11 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/dekelund/unbrokenwing/global"
 )
 
-func getFeaturePaths(path string, debug bool) (list []string) {
+func getFeaturePaths(path string) (list []string) {
 	dir, err := os.Open(path)
 
 	defer dir.Close()
@@ -28,7 +30,7 @@ func getFeaturePaths(path string, debug bool) (list []string) {
 
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".feature") {
-				if debug {
+				if global.Debug {
 					fmt.Printf("Ignoring non-feature file: '%s'\n", string(name))
 				}
 				continue
@@ -47,7 +49,7 @@ func getFeaturePaths(path string, debug bool) (list []string) {
 	return list
 }
 
-func getDefinitonPaths(path string, debug bool) (list []string) {
+func getDefinitonPaths(path string) (list []string) {
 	if _, err := isDir(path); err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +69,7 @@ func getDefinitonPaths(path string, debug bool) (list []string) {
 
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".go") {
-				if debug {
+				if global.Debug {
 					fmt.Printf("Ignoring non-definition file: '%s'\n", string(name))
 				}
 				continue
@@ -98,28 +100,29 @@ type List struct {
 // defPattern represents definitions folders name, shall be located in features directory.
 // Function returns a list of features found in features file/dir and corresponding definitions.
 // An error will be returned if error occur, if not caller are responsible to call Definitions.Remove().
-func ParseDir(fpath, defPattern string, debug bool) (list List, err error) {
-	var yes bool
+func ParseDir(fpath string) (list List, err error) {
+	var defPattern string
+	var dir bool
 
 	if fpath, err = filepath.Abs(fpath); err != nil {
 		log.Fatal(err)
 	}
 
-	if debug {
+	if global.Debug {
 		fmt.Printf("Going to test %s\n", fpath)
 	}
 
-	if yes, err = isDir(fpath); err != nil {
+	if dir, err = isDir(fpath); err != nil {
 		return
-	} else if yes {
+	} else if dir {
 		list.DefDir = path.Join(fpath, defPattern)
-		list.Features = getFeaturePaths(fpath, debug)
+		list.Features = getFeaturePaths(fpath)
 	} else {
 		list.DefDir = path.Join(filepath.Dir(fpath), defPattern)
 		list.Features = []string{fpath}
 	}
 
-	list.Definitions = getDefinitonPaths(filepath.Join(fpath, defPattern), debug)
+	list.Definitions = getDefinitonPaths(filepath.Join(fpath, defPattern))
 	return
 }
 

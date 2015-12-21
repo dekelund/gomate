@@ -121,7 +121,7 @@ func listFeatureFilesCmd(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
-	_, features := parseDir(dir, global.DefPattern)
+	_, features := parseDir(dir)
 
 	for i, feature := range features {
 		path := CWD + PathSeparator
@@ -133,7 +133,7 @@ func listFeaturesCmd(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
-	_, features := parseDir(dir, global.DefPattern)
+	_, features := parseDir(dir)
 
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
@@ -163,7 +163,7 @@ func printDefinitionsCodeCmd(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
-	definitions, _ := parseDir(dir, global.DefPattern)
+	definitions, _ := parseDir(dir)
 
 	fmt.Println(definitions.Code())
 }
@@ -174,7 +174,7 @@ func testCmd(c *cli.Context) {
 	setupGlobals(c)
 	dir := c.GlobalString("dir")
 
-	definitions, features := parseDir(dir, global.DefPattern)
+	definitions, features := parseDir(dir)
 
 	if !global.Debug {
 		defer definitions.Remove()
@@ -191,7 +191,7 @@ func testCmd(c *cli.Context) {
 	}
 }
 
-func parseDir(path, defPattern string) (definition.Definitions, []string) {
+func parseDir(path string) (definition.Definitions, []string) {
 	var err error
 	var list = feature.List{}
 	var defs = []io.Reader{}

@@ -101,7 +101,6 @@ type List struct {
 // Function returns a list of features found in features file/dir and corresponding definitions.
 // An error will be returned if error occur, if not caller are responsible to call Definitions.Remove().
 func ParseDir(fpath string) (list List, err error) {
-	var defPattern string
 	var dir bool
 
 	if fpath, err = filepath.Abs(fpath); err != nil {
@@ -115,14 +114,14 @@ func ParseDir(fpath string) (list List, err error) {
 	if dir, err = isDir(fpath); err != nil {
 		return
 	} else if dir {
-		list.DefDir = path.Join(fpath, defPattern)
+		list.DefDir = path.Join(fpath, global.DefPattern)
 		list.Features = getFeaturePaths(fpath)
 	} else {
-		list.DefDir = path.Join(filepath.Dir(fpath), defPattern)
+		list.DefDir = path.Join(filepath.Dir(fpath), global.DefPattern)
 		list.Features = []string{fpath}
 	}
 
-	list.Definitions = getDefinitonPaths(filepath.Join(fpath, defPattern))
+	list.Definitions = getDefinitonPaths(filepath.Join(fpath, global.DefPattern))
 	return
 }
 

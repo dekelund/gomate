@@ -19,15 +19,7 @@ func setup() {
 }
 
 func main() {
-	file := os.Args[1]
-	fd, err := os.Open(file)  // Open *.feature file
-	if err != nil {
-		log.Fatal("Error opening input file:", err)
-	}
-
-	defer fd.Close()
-
-	if pretty, err := strconv.ParseBool(os.Args[2]); err != nil {
+	if pretty, err := strconv.ParseBool(os.Args[1]); err != nil {
 		log.Fatal("Error configuring pretty print: ", err)
 	} else if pretty {
 		stdres.EnableColor()
@@ -36,7 +28,7 @@ func main() {
 	}
 
 	setup()
-	feature := NewFeature(fd)
+	feature := NewFeature(os.Stdin)
 	suite := NewSuite()
 	t := testing.T{}
 	suite.Test(*feature, &t)

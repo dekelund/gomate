@@ -75,28 +75,25 @@ func (definitions Definitions) Run(features io.Reader) {
 		return
 	}
 
-	var dir string
-	var featureLines []byte
-	var err error
-	var output []byte
+	featureLines, err := ioutil.ReadAll(features)
 
-	if featureLines, err = ioutil.ReadAll(features); err != nil {
+	if err != nil {
 		log.Panic(err.Error())
 	}
 
-	if dir, err = ioutil.TempDir("", "brokenwing-test-"); err != nil {
+	gorun := exec.Command(definitions.command, strconv.FormatBool(global.PPrint))
+	if stdin, err := gorun.StdinPipe(); err != nil {
+		log.Panic(err.Error())
+	} else if n, err := stdin.Write(featureLines); err != nil {
+		log.Panic(err.Error())
+	} else if n != len(featureLines) {
+		log.Panic("Behaviour binary file was not able to read all defined features")
+	} else if err := stdin.Close(); err != nil {
 		log.Panic(err.Error())
 	}
 
-	featureFile := path.Join(dir, "features")
-	if ioutil.WriteFile(featureFile, featureLines, 0700|os.ModeTemporary); err != nil {
+	if output, err := gorun.CombinedOutput(); err != nil {
 		log.Panic(err.Error())
-	}
-
-	gorun := exec.Command(definitions.command, featureFile, strconv.FormatBool(global.PPrint))
-
-	if output, err = gorun.CombinedOutput(); err != nil {
-		fmt.Println(string(output))
 	} else {
 		fmt.Println(string(output))
 	}

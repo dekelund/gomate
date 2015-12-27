@@ -233,25 +233,14 @@ func parseDir(path string) (definition.Definitions, []string) {
 		log.Fatal(err)
 	}
 
-	defFiles := []io.ReadCloser{}
-
-	defer func() {
-		for _, file := range defFiles {
-			file.Close()
-		}
-	}() // Make sure to close all open files
-
 	for _, def := range list.Definitions {
-		if file, err := os.Open(def); err == nil {
-			defFiles = append(defFiles, file)
-		} else {
+		file, err := os.Open(def)
+		if err != nil {
 			log.Fatal(err)
 		}
-	}
 
-	// FIXME figure out if it's possible to ignore convert
-	for _, def := range defFiles {
-		defs = append(defs, io.Reader(def))
+		defs = append(defs, io.Reader(file))
+		defer file.Close()
 	}
 
 	return definition.NewDefinitions(defs), list.Features

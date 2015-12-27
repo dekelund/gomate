@@ -220,7 +220,7 @@ func testCMD(c *cli.Context) {
 		}
 		defer fd.Close()
 
-		definitions.Run(fd, global.PPrint, global.Debug)
+		definitions.Run(fd)
 	}
 }
 

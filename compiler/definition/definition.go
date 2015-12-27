@@ -29,6 +29,7 @@ type Definitions struct {
 	defs    stepDefinitions
 	tmpDir  string
 	command string
+	removed bool
 }
 
 func (definitions stepDefinitions) Code() string {
@@ -66,11 +67,14 @@ func (definitions Definitions) Code() string {
 }
 
 // Run takes a DSL written feature from io.Reader and supply the data into precompiled behaviour code.
-// After execution of the binary, the result are written to STDOUT. Caller are able to specify pretty
-// print i.e., colors enabled. It's also possible to enable/disable debug output via method argument.
-// NOTE: It's callers responsibility to call Remove method before Definitions instance are garbage
-// collected.
-func (definitions Definitions) Run(features io.Reader, pprint, debug bool) {
+// After execution of the binary, the result are written to STDOUT. Method respects global.PPrint to
+// enable/disable pretty print i.e., colors enabled.
+func (definitions Definitions) Run(features io.Reader) {
+	if definitions.removed {
+		log.Println("Compiled behaviour binary file has been removed")
+		return
+	}
+
 	var dir string
 	var featureLines []byte
 	var err error
@@ -89,7 +93,7 @@ func (definitions Definitions) Run(features io.Reader, pprint, debug bool) {
 		log.Panic(err.Error())
 	}
 
-	gorun := exec.Command(definitions.command, featureFile, strconv.FormatBool(pprint))
+	gorun := exec.Command(definitions.command, featureFile, strconv.FormatBool(global.PPrint))
 
 	if output, err = gorun.CombinedOutput(); err != nil {
 		fmt.Println(string(output))
@@ -126,7 +130,9 @@ func NewDefinition(in io.Reader) Definition {
 
 // NewDefinitions reads and parse "defs" assuming that each element contains content from a step definition file.
 // Lines defining package names are ommited from resulting Definition instance.
-// Caller has the possibility to enable debug output via method argument.
+//
+// NOTE: It's callers responsibility to call Remove method before Definitions instance are garbage
+// collected.
 func NewDefinitions(defs []io.Reader) Definitions {
 	definitions := stepDefinitions{}
 
@@ -135,14 +141,19 @@ func NewDefinitions(defs []io.Reader) Definitions {
 	}
 
 	dir, cmd := definitions.compile()
-	return Definitions{definitions, dir, cmd}
+	return Definitions{definitions, dir, cmd, false}
 }
 
 // Remove will remove temporary file containing the generated step definition
 // After this method has been called, it's no longer possible to execute Run
 // method.
 func (definitions Definitions) Remove() {
-	os.Remove(definitions.tmpDir)
+	definitions.removed = true // Don't allow Run-calls from now on
+
+	if err := os.Remove(definitions.tmpDir); err != nil {
+		log.Println(err.Error())
+		return
+	}
 }
 
 func (definitions stepDefinitions) compile() (string, string) {

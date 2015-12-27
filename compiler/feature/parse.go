@@ -92,7 +92,6 @@ func getDefinitonPaths(path string) (list []string) {
 type List struct {
 	Features    []string
 	Definitions []string
-	DefDir      string
 }
 
 // ParseDir make use of tools input data to generate definions binary and features struct.
@@ -114,14 +113,16 @@ func ParseDir(fpath string) (list List, err error) {
 	if dir, err = isDir(fpath); err != nil {
 		return
 	} else if dir {
-		list.DefDir = path.Join(fpath, global.DefPattern)
 		list.Features = getFeaturePaths(fpath)
 	} else {
-		list.DefDir = path.Join(filepath.Dir(fpath), global.DefPattern)
 		list.Features = []string{fpath}
+		fpath = filepath.Dir(fpath) // Point fpath to dir
 	}
 
-	list.Definitions = getDefinitonPaths(filepath.Join(fpath, global.DefPattern))
+	list.Definitions = getDefinitonPaths(
+		path.Join(fpath, global.DefPattern), //Dir with .go-definitions
+	)
+
 	return
 }
 

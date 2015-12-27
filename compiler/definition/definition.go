@@ -147,7 +147,7 @@ func NewDefinitions(defs []io.Reader) Definitions {
 func (definitions Definitions) Remove() {
 	definitions.removed = true // Don't allow Run-calls from now on
 
-	if err := os.Remove(definitions.tmpDir); err != nil {
+	if err := os.RemoveAll(definitions.tmpDir); err != nil {
 		log.Println(err.Error())
 		return
 	}

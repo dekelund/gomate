@@ -60,9 +60,9 @@ import "strings"
 	// 	if err != nil {
 	// 		log.Fatal("Error opening input file:", err)
 	// 	}
-	//
+
 	// 	defer fd.Close()
-	//
+
 	// 	if pretty, err := strconv.ParseBool(os.Args[2]); err != nil {
 	// 		log.Fatal("Error configuring pretty print: ", err)
 	// 	} else if pretty {
@@ -70,14 +70,13 @@ import "strings"
 	// 	} else {
 	// 		stdres.DisableColor()
 	// 	}
-	//
+
 	// 	setup()
 	// 	feature := NewFeature(fd)
 	// 	suite := NewSuite()
 	// 	t := testing.T{}
 	// 	suite.Test(*feature, &t)
 	// }
-
 }
 
 func Example_Run() {
@@ -98,7 +97,7 @@ And("^I fill in a new developer named hacker with password changeme$", func(args
 import "strings"
 
 	`),
-	}, false)
+	})
 
 	features := bytes.NewBufferString(`
 Feature: Manage users
@@ -131,9 +130,7 @@ Feature: Manage users
     And user hacker should have password changeme
 `)
 
-	var pprint, debug bool
-
-	definitions.Run(features, pprint, debug)
+	definitions.Run(features)
 
 	// Output:
 	// Feature: Manage users

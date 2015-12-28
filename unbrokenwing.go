@@ -78,6 +78,7 @@ func main() {
 				" LOG_NOTICE=" + strconv.Itoa(int(syslog.LOG_NOTICE)) +
 				" LOG_INFO=" + strconv.Itoa(int(syslog.LOG_INFO)) +
 				" LOG_DEBUG=" + strconv.Itoa(int(syslog.LOG_DEBUG)),
+			Value: int(syslog.LOG_INFO),
 		},
 		cli.BoolFlag{
 			Name:  "pretty",

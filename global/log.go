@@ -1,21 +1,19 @@
 package global
 
 import "fmt"
+
 import "log/syslog"
 
 type logger struct {
-	syslog.Priority
 }
 
 func init() {
-	log = &logger{syslog.LOG_INFO}
+	log = &logger{}
 }
 
 func ReconfigureLogger() {
 	if Settings.SysLog.Active == false {
-		log = &logger{
-			Settings.SysLog.Priority,
-		}
+		log = &logger{}
 	} else if Settings.SysLog.RAddr == "localhost" {
 		log, _ = syslog.New(
 			Settings.SysLog.Priority,

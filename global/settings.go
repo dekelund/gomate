@@ -2,6 +2,10 @@ package global
 
 import "log/syslog"
 
+func init() {
+	Settings.SysLog.Priority = syslog.LOG_INFO
+}
+
 var Settings struct {
 	SysLog struct {
 		Active   bool

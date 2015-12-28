@@ -14,7 +14,7 @@ import (
 
 	"github.com/dekelund/unbrokenwing/compiler/definition"
 	"github.com/dekelund/unbrokenwing/compiler/feature"
-	"github.com/dekelund/unbrokenwing/global"
+	. "github.com/dekelund/unbrokenwing/global"
 )
 
 // Foreground colors
@@ -40,7 +40,7 @@ func init() {
 	var err error
 
 	if CWD, err = os.Getwd(); err != nil {
-		global.Fatal(err.Error())
+		Fatal(err.Error())
 	}
 }
 
@@ -134,25 +134,25 @@ func main() {
 }
 
 func setupGlobals(c *cli.Context) {
-	global.Settings.CWD = CWD
+	Settings.CWD = CWD
 
-	global.Settings.SysLog.Active = c.GlobalBool("syslog")
-	global.Settings.SysLog.UDP = c.GlobalBool("syslog-udp")
-	global.Settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
-	global.Settings.SysLog.Tag = c.GlobalString("syslog-tag")
-	global.Settings.SysLog.Priority = syslog.Priority(c.GlobalInt("priority"))
+	Settings.SysLog.Active = c.GlobalBool("syslog")
+	Settings.SysLog.UDP = c.GlobalBool("syslog-udp")
+	Settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
+	Settings.SysLog.Tag = c.GlobalString("syslog-tag")
+	Settings.SysLog.Priority = syslog.Priority(c.GlobalInt("priority"))
 
-	global.Settings.PPrint = c.GlobalBool("pretty")
-	global.Settings.Forensic = c.GlobalBool("forensic")
-	global.Settings.DefPattern = c.GlobalString("step-definitions")
+	Settings.PPrint = c.GlobalBool("pretty")
+	Settings.Forensic = c.GlobalBool("forensic")
+	Settings.DefPattern = c.GlobalString("step-definitions")
 
-	if global.Settings.PPrint {
+	if Settings.PPrint {
 		stdres.EnableColor()
 	} else {
 		stdres.DisableColor()
 	}
 
-	global.ReconfigureLogger()
+	ReconfigureLogger()
 }
 
 func listFeatureFilesCMD(c *cli.Context) {
@@ -163,7 +163,7 @@ func listFeatureFilesCMD(c *cli.Context) {
 
 	for i, feature := range features {
 		path := CWD + PathSeparator
-		global.Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
+		Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
 	}
 }
 
@@ -176,17 +176,17 @@ func listFeaturesCMD(c *cli.Context) {
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
 		if err != nil {
-			global.Fatal(err.Error())
+			Fatal(err.Error())
 		}
 
 		bytes, err := ioutil.ReadAll(fileReader)
 		if err != nil {
-			global.Fatal(err.Error())
+			Fatal(err.Error())
 		}
 
 		text := string(bytes)
 
-		if global.Settings.PPrint {
+		if Settings.PPrint {
 			text = strings.Replace(text, "Feature: ", red+"Feature: "+reset, -1)
 			text = strings.Replace(text, "Scenario: ", red+"Scenario: "+reset, -1)
 			text = strings.Replace(text, " Given ", green+" Given "+reset, -1)
@@ -196,7 +196,7 @@ func listFeaturesCMD(c *cli.Context) {
 		}
 
 		path := CWD + PathSeparator
-		global.Infof("\n# ", strings.TrimPrefix(feature, path), "\n", text, "\n")
+		Infof("\n# ", strings.TrimPrefix(feature, path), "\n", text, "\n")
 	}
 }
 
@@ -208,7 +208,7 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 
 	text := string(definitions.Code())
 
-	if global.Settings.PPrint {
+	if Settings.PPrint {
 		text = strings.Replace(text, "package main", yellow+"package "+blue+"main"+reset, -1)
 		text = strings.Replace(text, "import ", yellow+"import"+reset+" ", -1)
 		text = strings.Replace(text, "func ", blue+"func"+reset+" ", -1)
@@ -236,7 +236,7 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 		text = strings.Replace(text, "os.Args[", yellow+"os.Args"+reset+"[", -1)
 	}
 
-	global.Infof(text)
+	Infof(text)
 }
 
 // testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
@@ -247,14 +247,14 @@ func testCMD(c *cli.Context) {
 
 	definitions, features := parseDir(dir)
 
-	if !global.Settings.Forensic {
+	if !Settings.Forensic {
 		defer definitions.Remove()
 	}
 
 	for _, file := range features {
 		fd, err := os.Open(file)
 		if err != nil {
-			global.Fatal(err.Error())
+			Fatal(err.Error())
 		}
 		defer fd.Close()
 
@@ -268,13 +268,13 @@ func parseDir(path string) (definition.Definitions, []string) {
 	var defs = []io.Reader{}
 
 	if list, err = feature.ParseDir(path); err != nil {
-		global.Fatal(err.Error())
+		Fatal(err.Error())
 	}
 
 	for _, def := range list.Definitions {
 		file, err := os.Open(def)
 		if err != nil {
-			global.Fatal(err.Error())
+			Fatal(err.Error())
 		}
 
 		defs = append(defs, io.Reader(file))

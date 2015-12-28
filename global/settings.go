@@ -1,7 +1,12 @@
 package global
 
-var Debug bool = false
-var PPrint bool = false
+import "log/syslog"
 
-var CWD string = "."
-var DefPattern string = "step_definitions"
+var Settings struct {
+	SysLog      bool
+	LogPriority syslog.Priority
+	Debug       bool
+	PPrint      bool
+	CWD         string
+	DefPattern  string
+}

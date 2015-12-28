@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,28 +17,26 @@ func getFeaturePaths(path string) (list []string) {
 	dir, err := os.Open(path)
 
 	if err != nil {
-		log.Fatal("Error opening input file:", err)
+		global.Fatalf("Error opening input file:", err)
 	}
 
 	defer dir.Close()
 
 	for names, err := dir.Readdirnames(10); err != io.EOF; names, err = dir.Readdirnames(10) {
 		if err != nil {
-			log.Fatal("Error listing files:", err)
+			global.Fatalf("Error listing files:", err)
 		}
 
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".feature") {
-				if global.Debug {
-					fmt.Printf("Ignoring non-feature file: '%s'\n", string(name))
-				}
+				global.Debug(fmt.Sprintf("Ignoring non-feature file: '%s'\n", string(name)))
 				continue
 			}
 
 			fpath, err := filepath.Abs(filepath.Join(path, name))
 
 			if err != nil {
-				log.Fatal(err)
+				global.Fatal(err.Error())
 			}
 
 			list = append(list, fpath)
@@ -51,7 +48,7 @@ func getFeaturePaths(path string) (list []string) {
 
 func getDefinitonPaths(path string) (list []string) {
 	if _, err := isDir(path); err != nil {
-		log.Fatal(err)
+		global.Fatal(err.Error())
 	}
 
 	dir, err := os.Open(path)
@@ -59,26 +56,24 @@ func getDefinitonPaths(path string) (list []string) {
 	defer dir.Close()
 
 	if err != nil {
-		log.Fatal("Error opening input file:", err)
+		global.Fatalf("Error opening input file:", err)
 	}
 
 	for names, err := dir.Readdirnames(10); err != io.EOF; names, err = dir.Readdirnames(10) {
 		if err != nil {
-			log.Fatal("Error listing files:", err)
+			global.Fatalf("Error listing files:", err)
 		}
 
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".go") {
-				if global.Debug {
-					fmt.Printf("Ignoring non-definition file: '%s'\n", string(name))
-				}
+				global.Debug(fmt.Sprintf("Ignoring non-definition file: '%s'\n", string(name)))
 				continue
 			}
 
 			defPath, err := filepath.Abs(filepath.Join(path, name))
 
 			if err != nil {
-				log.Fatal(err)
+				global.Fatal(err.Error())
 			}
 
 			list = append(list, defPath)
@@ -103,12 +98,10 @@ func ParseDir(fpath string) (list List, err error) {
 	var dir bool
 
 	if fpath, err = filepath.Abs(fpath); err != nil {
-		log.Fatal(err)
+		global.Fatal(err.Error())
 	}
 
-	if global.Debug {
-		fmt.Printf("Going to test %s\n", fpath)
-	}
+	global.Debug(fmt.Sprintf("Going to test %s\n", fpath))
 
 	if dir, err = isDir(fpath); err != nil {
 		return
@@ -120,7 +113,7 @@ func ParseDir(fpath string) (list List, err error) {
 	}
 
 	list.Definitions = getDefinitonPaths(
-		path.Join(fpath, global.DefPattern), //Dir with .go-definitions
+		path.Join(fpath, global.Settings.DefPattern), //Dir with .go-definitions
 	)
 
 	return

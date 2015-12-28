@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
+	"strconv"
 	"strings"
+
+	"log/syslog"
 
 	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
@@ -36,12 +37,11 @@ const (
 var CWD string = "."
 
 func init() {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Panic(err)
-	}
+	var err error
 
-	CWD = cwd
+	if CWD, err = os.Getwd(); err != nil {
+		global.Fatal(err.Error())
+	}
 }
 
 func main() {
@@ -50,12 +50,28 @@ func main() {
 	app.Usage = "Run behaviour driven tests as Gherik features"
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
+			Name:  "syslog",
+			Usage: "Send output to systems syslog server",
+		},
+		cli.IntFlag{
+			Name: "priority",
+			Usage: "Log priority, use bitwised values from /usr/include/sys/syslog.h e.g.," +
+				" LOG_EMERG=" + strconv.Itoa(int(syslog.LOG_EMERG)) +
+				" LOG_ALERT=" + strconv.Itoa(int(syslog.LOG_ALERT)) +
+				" LOG_CRIT=" + strconv.Itoa(int(syslog.LOG_CRIT)) +
+				" LOG_ERR=" + strconv.Itoa(int(syslog.LOG_ERR)) +
+				" LOG_WARNING=" + strconv.Itoa(int(syslog.LOG_WARNING)) +
+				" LOG_NOTICE=" + strconv.Itoa(int(syslog.LOG_NOTICE)) +
+				" LOG_INFO=" + strconv.Itoa(int(syslog.LOG_INFO)) +
+				" LOG_DEBUG=" + strconv.Itoa(int(syslog.LOG_DEBUG)),
+		},
+		cli.BoolFlag{
 			Name:  "pretty",
 			Usage: "Print colorised result to STDOUT/STDERR",
 		},
 		cli.BoolFlag{
-			Name:  "debug",
-			Usage: "Verbose printing (Generated files will be kept)",
+			Name:  "forensic",
+			Usage: "A kind of development mode, all generated files will be kept",
 		},
 		cli.StringFlag{
 			Name:  "step-definitions",
@@ -104,17 +120,22 @@ func main() {
 }
 
 func setupGlobals(c *cli.Context) {
-	global.Debug = c.GlobalBool("debug")
-	global.PPrint = c.GlobalBool("pretty")
-	global.DefPattern = c.GlobalString("step-definitions")
+	global.Settings.CWD = CWD
 
-	global.CWD = CWD
+	global.Settings.SysLog = c.GlobalBool("syslog")
+	global.Settings.LogPriority = syslog.Priority(c.GlobalInt("priority"))
 
-	if global.PPrint {
+	global.Settings.PPrint = c.GlobalBool("pretty")
+	global.Settings.Forensic = c.GlobalBool("forensic")
+	global.Settings.DefPattern = c.GlobalString("step-definitions")
+
+	if global.Settings.PPrint {
 		stdres.EnableColor()
 	} else {
 		stdres.DisableColor()
 	}
+
+	global.ReconfigureLogger()
 }
 
 func listFeatureFilesCMD(c *cli.Context) {
@@ -125,7 +146,7 @@ func listFeatureFilesCMD(c *cli.Context) {
 
 	for i, feature := range features {
 		path := CWD + PathSeparator
-		fmt.Printf("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
+		global.Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
 	}
 }
 
@@ -138,17 +159,17 @@ func listFeaturesCMD(c *cli.Context) {
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
 		if err != nil {
-			log.Fatal(err)
+			global.Fatal(err.Error())
 		}
 
 		bytes, err := ioutil.ReadAll(fileReader)
 		if err != nil {
-			log.Fatal(err)
+			global.Fatal(err.Error())
 		}
 
 		text := string(bytes)
 
-		if global.PPrint {
+		if global.Settings.PPrint {
 			text = strings.Replace(text, "Feature: ", red+"Feature: "+reset, -1)
 			text = strings.Replace(text, "Scenario: ", red+"Scenario: "+reset, -1)
 			text = strings.Replace(text, " Given ", green+" Given "+reset, -1)
@@ -158,7 +179,7 @@ func listFeaturesCMD(c *cli.Context) {
 		}
 
 		path := CWD + PathSeparator
-		fmt.Print("\n# ", strings.TrimPrefix(feature, path), "\n", text, "\n")
+		global.Infof("\n# ", strings.TrimPrefix(feature, path), "\n", text, "\n")
 	}
 }
 
@@ -170,7 +191,7 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 
 	text := string(definitions.Code())
 
-	if global.PPrint {
+	if global.Settings.PPrint {
 		text = strings.Replace(text, "package main", yellow+"package "+blue+"main"+reset, -1)
 		text = strings.Replace(text, "import ", yellow+"import"+reset+" ", -1)
 		text = strings.Replace(text, "func ", blue+"func"+reset+" ", -1)
@@ -198,7 +219,7 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 		text = strings.Replace(text, "os.Args[", yellow+"os.Args"+reset+"[", -1)
 	}
 
-	fmt.Println(text)
+	global.Infof(text)
 }
 
 // testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
@@ -209,14 +230,14 @@ func testCMD(c *cli.Context) {
 
 	definitions, features := parseDir(dir)
 
-	if !global.Debug {
+	if !global.Settings.Forensic {
 		defer definitions.Remove()
 	}
 
 	for _, file := range features {
 		fd, err := os.Open(file)
 		if err != nil {
-			log.Fatal(err)
+			global.Fatal(err.Error())
 		}
 		defer fd.Close()
 
@@ -230,13 +251,13 @@ func parseDir(path string) (definition.Definitions, []string) {
 	var defs = []io.Reader{}
 
 	if list, err = feature.ParseDir(path); err != nil {
-		log.Fatal(err)
+		global.Fatal(err.Error())
 	}
 
 	for _, def := range list.Definitions {
 		file, err := os.Open(def)
 		if err != nil {
-			log.Fatal(err)
+			global.Fatal(err.Error())
 		}
 
 		defs = append(defs, io.Reader(file))

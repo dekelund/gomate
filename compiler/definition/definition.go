@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -71,31 +70,31 @@ func (definitions Definitions) Code() string {
 // enable/disable pretty print i.e., colors enabled.
 func (definitions Definitions) Run(features io.Reader) {
 	if definitions.removed {
-		log.Println("Compiled behaviour binary file has been removed")
+		global.Info("Compiled behaviour binary file has been removed")
 		return
 	}
 
 	featureLines, err := ioutil.ReadAll(features)
 
 	if err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	}
 
-	gorun := exec.Command(definitions.command, strconv.FormatBool(global.PPrint))
+	gorun := exec.Command(definitions.command, strconv.FormatBool(global.Settings.PPrint))
 	if stdin, err := gorun.StdinPipe(); err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	} else if n, err := stdin.Write(featureLines); err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	} else if n != len(featureLines) {
-		log.Panic("Behaviour binary file was not able to read all defined features")
+		global.Fatal("Behaviour binary file was not able to read all defined features")
 	} else if err := stdin.Close(); err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	}
 
 	if output, err := gorun.CombinedOutput(); err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	} else {
-		fmt.Println(string(output))
+		global.Info(string(output))
 	}
 }
 
@@ -104,7 +103,7 @@ func (definitions Definitions) Run(features io.Reader) {
 func NewDefinition(in io.Reader) Definition {
 	code, err := ioutil.ReadAll(in)
 	if err != nil {
-		log.Fatal(err)
+		global.Fatal(err.Error())
 	}
 
 	imports := []string{}
@@ -148,7 +147,7 @@ func (definitions Definitions) Remove() {
 	definitions.removed = true // Don't allow Run-calls from now on
 
 	if err := os.RemoveAll(definitions.tmpDir); err != nil {
-		log.Println(err.Error())
+		global.Err(err.Error())
 		return
 	}
 }
@@ -164,15 +163,15 @@ func (definitions stepDefinitions) compile() (string, string) {
 	gobuild := exec.Command("go", "build", "-o", testFile, testCode)
 
 	if err = goimport.Run(); err != nil {
-		fmt.Println(err.Error())
+		global.Err(err.Error())
 	}
 
 	if err = gofmt.Run(); err != nil {
-		fmt.Println(err.Error())
+		global.Err(err.Error())
 	}
 
 	if output, err = gobuild.CombinedOutput(); err != nil {
-		fmt.Println(string(output))
+		global.Err(string(output))
 	}
 
 	return dir, testFile
@@ -182,18 +181,20 @@ func (definitions stepDefinitions) store() (dir, testCode, testFile string) {
 	var err error
 
 	if dir, err = ioutil.TempDir("", "brokenwing-test-"); err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	}
 
 	testCode = path.Join(dir, "definitions.go")
 	testFile = path.Join(dir, "definitions")
 
 	if ioutil.WriteFile(testCode, []byte(definitions.Code()), 0700|os.ModeTemporary); err != nil {
-		log.Panic(err.Error())
+		global.Fatal(err.Error())
 	}
 
-	if global.Debug {
-		fmt.Println("Wrote '", string(testCode), "'. File will not be deleted, due to debug mode.")
+	if global.Settings.Forensic {
+		global.Noticef("Wrote '%s'. File will not be deleted, due to forensic mode.", string(testCode))
+	} else {
+		global.Debugf("Wrote '%s'", string(testCode))
 	}
 
 	return

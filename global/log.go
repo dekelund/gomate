@@ -3,7 +3,6 @@ package global
 import "fmt"
 import "log/syslog"
 
-// FIXME: Don't expose struct
 type logger struct {
 	syslog.Priority
 }
@@ -13,15 +12,32 @@ func init() {
 }
 
 func ReconfigureLogger() {
-	if Settings.SysLog {
-		log, _ = syslog.New(Settings.LogPriority, "unbrokenwing")
+	if Settings.SysLog.Active == false {
+		log = &logger{
+			Settings.SysLog.Priority,
+		}
+	} else if Settings.SysLog.RAddr == "localhost" {
+		log, _ = syslog.New(
+			Settings.SysLog.Priority,
+			Settings.SysLog.Tag,
+		)
 	} else {
-		log = &logger{Settings.LogPriority}
+		// Connection to remote address required
+		network := "tcp"
+
+		if Settings.SysLog.UDP {
+			network = "udp"
+		}
+
+		log, _ = syslog.Dial(
+			network, Settings.SysLog.RAddr,
+			Settings.SysLog.Priority, Settings.SysLog.Tag,
+		)
 	}
 }
 
 func prioPrint(priority syslog.Priority, m string) {
-	if priority <= Settings.LogPriority {
+	if priority <= Settings.SysLog.Priority {
 		fmt.Println(m)
 	}
 }

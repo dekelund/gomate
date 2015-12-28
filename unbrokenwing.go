@@ -51,7 +51,21 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "syslog",
-			Usage: "Send output to systems syslog server",
+			Usage: "Redirect STDOUT to SysLog server",
+		},
+		cli.BoolFlag{
+			Name:  "syslog-udp",
+			Usage: "Use UDP instead of TCP",
+		},
+		cli.StringFlag{
+			Name:  "syslog-raddr",
+			Usage: "HOST/IP address to SysLog server",
+			Value: "localhost",
+		},
+		cli.StringFlag{
+			Name:  "syslog-tag",
+			Usage: "Tag output with specified text string",
+			Value: "unbrokenwing",
 		},
 		cli.IntFlag{
 			Name: "priority",
@@ -122,8 +136,11 @@ func main() {
 func setupGlobals(c *cli.Context) {
 	global.Settings.CWD = CWD
 
-	global.Settings.SysLog = c.GlobalBool("syslog")
-	global.Settings.LogPriority = syslog.Priority(c.GlobalInt("priority"))
+	global.Settings.SysLog.Active = c.GlobalBool("syslog")
+	global.Settings.SysLog.UDP = c.GlobalBool("syslog-udp")
+	global.Settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
+	global.Settings.SysLog.Tag = c.GlobalString("syslog-tag")
+	global.Settings.SysLog.Priority = syslog.Priority(c.GlobalInt("priority"))
 
 	global.Settings.PPrint = c.GlobalBool("pretty")
 	global.Settings.Forensic = c.GlobalBool("forensic")

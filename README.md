@@ -17,6 +17,9 @@ rapidly execute the test projects. Such tests are divided into
 domain based scenarios and unit tests, gomate provide
 means to the former one.
 
+Latest version tag: 0.1
+Project webpage: [gomate.io](http://www.gomate.io)
+
 ### Example
 
 A typical Hello World-example, providing users and project based

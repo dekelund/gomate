@@ -12,9 +12,9 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
 
-	"github.com/dekelund/unbrokenwing/compiler/definition"
-	"github.com/dekelund/unbrokenwing/compiler/feature"
-	. "github.com/dekelund/unbrokenwing/global"
+	"github.com/dekelund/gomate/compiler/definition"
+	"github.com/dekelund/gomate/compiler/feature"
+	. "github.com/dekelund/gomate/global"
 )
 
 // Foreground colors
@@ -46,7 +46,7 @@ func init() {
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "unbrokenwing"
+	app.Name = "gomate"
 	app.Usage = "Run behaviour driven tests as Gherik features"
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
@@ -65,7 +65,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "syslog-tag",
 			Usage: "Tag output with specified text string",
-			Value: "unbrokenwing",
+			Value: "gomate",
 		},
 		cli.IntFlag{
 			Name: "priority",

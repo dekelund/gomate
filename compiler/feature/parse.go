@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/dekelund/unbrokenwing/global"
+	. "github.com/dekelund/gomate/global"
 )
 
 func getFeaturePaths(path string) (list []string) {

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/dekelund/unbrokenwing/global"
+	. "github.com/dekelund/gomate/global"
 )
 
 var emptyLineRexexp = regexp.MustCompile("^[\t ]*$")

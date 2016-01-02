@@ -12,9 +12,9 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
 
-	"github.com/dekelund/gomate/compiler/definition"
-	"github.com/dekelund/gomate/compiler/feature"
-	. "github.com/dekelund/gomate/global"
+	"gomate.io/gomate/compiler/definition"
+	"gomate.io/gomate/compiler/feature"
+	. "gomate.io/gomate/global"
 )
 
 // Foreground colors

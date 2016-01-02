@@ -18,7 +18,8 @@ domain based scenarios and unit tests, gomate provide
 means to the former one.
 
 Latest version tag: 0.1
-Project webpage: [gomate.io](http://www.gomate.io)
+
+Project webpage: [gomate.io](https://www.gomate.io)
 
 ### Example
 
@@ -153,7 +154,8 @@ Pending version of behaviours missing in todays setup.
 ## Installation
 
 ```
-go get github.com/dekelund/gomate
+go get gomate.io/gomate
+go install gomate.io/gomate
 ```
 
 ## Configuration

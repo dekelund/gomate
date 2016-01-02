@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/dekelund/gomate/unbrokenwing"
 	"github.com/dekelund/stdres"
+	. "gomate.io/gomate/unbrokenwing"
 )
 
 func Example_NewDefinition() {

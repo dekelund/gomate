@@ -4,7 +4,7 @@ var snippet string = `
 package main
 
 import (
-	. "github.com/dekelund/gomate/unbrokenwing"
+	. "gomate.io/gomate/unbrokenwing"
 	"github.com/dekelund/stdres"
 	"strconv"
 	"os"

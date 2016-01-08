@@ -198,7 +198,7 @@ func listFeaturesCMD(c *cli.Context) {
 		}
 
 		path := CWD + PathSeparator
-		Infof("\n# ", strings.TrimPrefix(feature, path), "\n", text, "\n")
+		Infof("\n# %s\n%s\n", strings.TrimPrefix(feature, path), text)
 	}
 }
 

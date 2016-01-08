@@ -11,7 +11,7 @@ most critical steps in software engineering. Without the correct
 behaviour, your project is lost, regardless of the outcome.
 
 Such verification needs to be automated, and continuously tested
-by the environment. Therefor we need small and simple tools to
+by the environment. Therefore we need small and simple tools to
 rapidly execute the test projects. Such tests are divided into
 domain based scenarios and unit tests, gomate provide
 means to the former one.

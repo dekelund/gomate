@@ -15,19 +15,7 @@ import (
 	"gomate.io/gomate/compiler/definition"
 	"gomate.io/gomate/compiler/feature"
 	. "gomate.io/gomate/global"
-)
-
-// Foreground colors
-const (
-	reset   = "\033[00m"
-	black   = "\033[30m"
-	red     = "\033[31m"
-	green   = "\033[32m"
-	yellow  = "\033[33m"
-	blue    = "\033[34m"
-	magenta = "\033[35m"
-	cyan    = "\033[36m"
-	white   = "\033[37m"
+	"gomate.io/gomate/internal/highlighter"
 )
 
 const (
@@ -189,12 +177,7 @@ func listFeaturesCMD(c *cli.Context) {
 		text := string(bytes)
 
 		if Settings.PPrint {
-			text = strings.Replace(text, "Feature: ", red+"Feature: "+reset, -1)
-			text = strings.Replace(text, "Scenario: ", red+"Scenario: "+reset, -1)
-			text = strings.Replace(text, " Given ", green+" Given "+reset, -1)
-			text = strings.Replace(text, " And ", green+" And "+reset, -1)
-			text = strings.Replace(text, " When ", blue+" When "+reset, -1)
-			text = strings.Replace(text, " Then ", yellow+" Then "+reset, -1)
+			text = highlighter.Feature(text)
 		}
 
 		path := CWD + PathSeparator
@@ -208,37 +191,13 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 
 	definitions, _ := parseDir(dir)
 
-	text := string(definitions.Code())
+	defs := definitions.Code()
 
 	if Settings.PPrint {
-		text = strings.Replace(text, "package main", yellow+"package "+blue+"main"+reset, -1)
-		text = strings.Replace(text, "import ", yellow+"import"+reset+" ", -1)
-		text = strings.Replace(text, "func ", blue+"func"+reset+" ", -1)
-		text = strings.Replace(text, "func(", blue+"func"+reset+"(", -1)
-		text = strings.Replace(text, "defer ", blue+"defer"+reset+" ", -1)
-		text = strings.Replace(text, " error ", " "+red+"error"+reset+" ", -1)
-
-		text = strings.Replace(text, "\nFeature(", red+"\nFeature"+reset+"(", -1)
-		text = strings.Replace(text, "\nScenario(", red+"\nScenario"+reset+"(", -1)
-		text = strings.Replace(text, "\nGiven(", green+"\nGiven"+reset+"(", -1)
-		text = strings.Replace(text, "\nAnd(", green+"\nAnd"+reset+"(", -1)
-		text = strings.Replace(text, "\nWhen(", blue+"\nWhen"+reset+"(", -1)
-		text = strings.Replace(text, "\nThen(", yellow+"\nThen"+reset+"(", -1)
-
-		text = strings.Replace(text, "main()", yellow+"main"+reset+"()", -1)
-		text = strings.Replace(text, "setup()", yellow+"setup"+reset+"()", -1)
-
-		text = strings.Replace(text, " Pending(", " "+yellow+"Pending"+reset+"(", -1)
-		text = strings.Replace(text, "os.Open(", yellow+"os.Open"+reset+"(", -1)
-		text = strings.Replace(text, "fd.Close(", yellow+"fd.Close"+reset+"(", -1)
-		text = strings.Replace(text, "suite.Test(", yellow+"suite.Test"+reset+"(", -1)
-		text = strings.Replace(text, "ParseBool(", yellow+"ParseBool"+reset+"(", -1)
-		text = strings.Replace(text, "stdres.EnableColor(", yellow+"stdres.EnableColor"+reset+"(", -1)
-		text = strings.Replace(text, "stdres.DisableColor(", yellow+"stdres.DisableColor"+reset+"(", -1)
-		text = strings.Replace(text, "os.Args[", yellow+"os.Args"+reset+"[", -1)
+		defs = highlighter.Definition(defs)
 	}
 
-	Infof(text)
+	Infof(defs)
 }
 
 // testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.

@@ -112,6 +112,13 @@ func main() {
 			Action:  printDefinitionsCodeCMD,
 		},
 		{
+			Name:    "scaffold",
+			Aliases: []string{},
+			Usage:   "Create code that initiate alternative protocol commands from step definitions.",
+			Flags:   []cli.Flag{},
+			Action:  scaffoldCMD,
+		},
+		{
 			Name:    "test",
 			Aliases: []string{"t"},
 			Usage:   "Tests either a test directory with features in it, or a .feature file",
@@ -191,7 +198,7 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 
 	definitions, _ := parseDir(dir)
 
-	defs := definitions.Code()
+	defs := definitions.TestCode()
 
 	if Settings.PPrint {
 		defs = highlighter.Definition(defs)
@@ -221,6 +228,21 @@ func testCMD(c *cli.Context) {
 
 		definitions.Run(fd)
 	}
+}
+
+func scaffoldCMD(c *cli.Context) {
+	setupGlobals(c)
+	dir := c.GlobalString("dir")
+
+	definitions, _ := parseDir(dir)
+
+	defs := definitions.ScaffoldCode()
+
+	if Settings.PPrint {
+		defs = highlighter.Definition(defs)
+	}
+
+	Infof(defs)
 }
 
 func parseDir(path string) (definition.Definitions, []string) {

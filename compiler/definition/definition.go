@@ -31,7 +31,15 @@ type Definitions struct {
 	removed bool
 }
 
-func (definitions stepDefinitions) Code() string {
+func (definitions stepDefinitions) TestCode() string {
+	return definitions.GenerateCode(snippet)
+}
+
+func (definitions stepDefinitions) ScaffoldCode() string {
+	return definitions.GenerateCode(scaffold)
+}
+
+func (definitions stepDefinitions) GenerateCode(template string) string {
 	imports := []string{}
 	funcs := []string{}
 
@@ -40,20 +48,7 @@ func (definitions stepDefinitions) Code() string {
 		funcs = append(funcs, definition.funcs...)
 	}
 
-	return fmt.Sprintf(snippet, strings.Join(imports, "\n"), strings.Join(funcs, "\n"))
-}
-
-// Code method generates source code based on a step definition.
-// The step definition are located into a go function named setup, this function sets
-// up all definition just before the parsement of the feature file that has been supplied as first
-// argument on commandline. Second argument must be text string "true" or "false", that enables
-// and disables pretty print i.e., print to STDOUT with or without color.
-func (definition Definition) Code() string {
-	return fmt.Sprintf(
-		snippet,
-		strings.Join(definition.imports, "\n"),
-		strings.Join(definition.funcs, "\n"),
-	)
+	return fmt.Sprintf(template, strings.Join(imports, "\n"), strings.Join(funcs, "\n"))
 }
 
 // Code method generates source code based on step definitions.
@@ -61,8 +56,12 @@ func (definition Definition) Code() string {
 // up all definition just before the parsement of the feature file that has been supplied as first
 // argument on commandline. Second argument must be text string "true" or "false", that enables
 // and disables pretty print i.e., print to STDOUT with or without color.
-func (definitions Definitions) Code() string {
-	return definitions.defs.Code()
+func (definitions Definitions) TestCode() string {
+	return definitions.defs.TestCode()
+}
+
+func (definitions Definitions) ScaffoldCode() string {
+	return definitions.defs.ScaffoldCode()
 }
 
 // Run takes a DSL written feature from io.Reader and supply the data into precompiled behaviour code.
@@ -187,7 +186,7 @@ func (definitions stepDefinitions) store() (dir, testCode, testFile string) {
 	testCode = path.Join(dir, "definitions.go")
 	testFile = path.Join(dir, "definitions")
 
-	if ioutil.WriteFile(testCode, []byte(definitions.Code()), 0700|os.ModeTemporary); err != nil {
+	if ioutil.WriteFile(testCode, []byte(definitions.TestCode()), 0700|os.ModeTemporary); err != nil {
 		Fatal(err.Error())
 	}
 

@@ -33,3 +33,26 @@ func main() {
 	t := testing.T{}
 	suite.Test(*feature, &t)
 }`
+
+var scaffold string = `
+package main
+
+
+import . "gomate.io/gomate/unbrokenwing"
+import "fmt"
+
+%s
+
+func setup() {
+%s
+}
+
+func main() {
+	setup()
+
+	errors := ExecuteCMD("user ekelund")
+	for i, err := range errors {
+		fmt.Print(i)
+		fmt.Println(") " + err.Error())
+	}
+}`

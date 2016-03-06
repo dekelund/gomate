@@ -34,15 +34,29 @@ package main
 
 import (
 	. "gomate.io/gomate/unbrokenwing"
+	"bufio"
 	"fmt"
+	"os"
 
 	%s
 )
 
 func main() {
-	errors := ExecuteCMD("user ekelund")
-	for i, err := range errors {
-		fmt.Print(i)
-		fmt.Println(") " + err.Error())
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		cmd, err := reader.ReadString('\n')
+		if err != nil {
+			panic(err.Error())
+		}
+
+		errors := ExecuteCMD(cmd)
+
+		for _, err := range errors {
+			fmt.Println(err.Error())
+		}
+
+		if len(errors) > 0 {
+			panic("To many errors, panic!")
+		}
 	}
 }`

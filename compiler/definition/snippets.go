@@ -1,6 +1,6 @@
 package definition
 
-var snippet string = `
+var test string = `
 package main
 
 import (
@@ -10,13 +10,9 @@ import (
 	"os"
 	"log"
 	"testing"
+
+	%s
 )
-
-%s  // FIXME: This will not work with "import ("
-
-func setup() {
-%s
-}
 
 func main() {
 	if pretty, err := strconv.ParseBool(os.Args[1]); err != nil {
@@ -27,7 +23,6 @@ func main() {
 		stdres.DisableColor()
 	}
 
-	setup()
 	feature := NewFeature(os.Stdin)
 	suite := NewSuite()
 	t := testing.T{}
@@ -37,19 +32,14 @@ func main() {
 var scaffold string = `
 package main
 
+import (
+	. "gomate.io/gomate/unbrokenwing"
+	"fmt"
 
-import . "gomate.io/gomate/unbrokenwing"
-import "fmt"
-
-%s
-
-func setup() {
-%s
-}
+	%s
+)
 
 func main() {
-	setup()
-
 	errors := ExecuteCMD("user ekelund")
 	for i, err := range errors {
 		fmt.Print(i)

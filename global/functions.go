@@ -3,6 +3,8 @@ package global
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 var log interface { //*syslog.Writer
@@ -62,4 +64,24 @@ func Fatal(reason string) {
 
 func Fatalf(reason string, args ...interface{}) {
 	Fatal(fmt.Sprintf(reason, args...))
+}
+
+func PKGPathToPath(cwd, goSRCPath string, paths []string) (pkgs []string) {
+	for _, path := range paths {
+		if path == "." {
+			if !strings.HasPrefix(cwd, goSRCPath) {
+				panic("Using .-notation, and current working directory not within gopath")
+			}
+
+			path = cwd
+		}
+
+		if !strings.HasPrefix(path, goSRCPath) {
+			path = filepath.Join(goSRCPath, path)
+		}
+
+		pkgs = append(pkgs, path)
+	}
+
+	return
 }

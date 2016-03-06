@@ -1,9 +1,9 @@
 package main
 
 import (
-	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -85,7 +85,11 @@ func main() {
 		cli.StringFlag{
 			Name:  "dir",
 			Value: ".",
-			Usage: "Relative path, to a feature-file or -directory (Current value: " + CWD + ").",
+			Usage: "Relative path, to a feature-file or -directory (Current value: " + Settings.CWD + ").",
+		},
+		cli.StringSliceFlag{
+			Name:  "pkgs",
+			Usage: "Packages import path, except '.' that correspond to package in current working directory (" + Settings.CWD + ").",
 		},
 	}
 
@@ -133,6 +137,9 @@ func main() {
 func setupGlobals(c *cli.Context) {
 	Settings.CWD = CWD
 
+	Settings.GOPATH = os.Getenv("GOPATH")
+	Settings.GOSRCPATH = filepath.Join(Settings.GOPATH, "src")
+
 	Settings.SysLog.Active = c.GlobalBool("syslog")
 	Settings.SysLog.UDP = c.GlobalBool("syslog-udp")
 	Settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
@@ -154,21 +161,29 @@ func setupGlobals(c *cli.Context) {
 
 func listFeatureFilesCMD(c *cli.Context) {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	paths := c.GlobalStringSlice("pkgs")
 
-	_, features := parseDir(dir)
+	if len(paths) == 0 { // nil or empty
+		paths = []string{"."}
+	}
+
+	features := feature.New(paths)
 
 	for i, feature := range features {
-		path := CWD + PathSeparator
+		path := Settings.CWD + PathSeparator
 		Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
 	}
 }
 
 func listFeaturesCMD(c *cli.Context) {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	paths := c.GlobalStringSlice("pkgs")
 
-	_, features := parseDir(dir)
+	if len(paths) == 0 { // nil or empty
+		paths = []string{"."}
+	}
+
+	features := feature.New(paths)
 
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
@@ -187,37 +202,40 @@ func listFeaturesCMD(c *cli.Context) {
 			text = highlighter.Feature(text)
 		}
 
-		path := CWD + PathSeparator
+		path := Settings.CWD + PathSeparator
 		Infof("\n# %s\n%s\n", strings.TrimPrefix(feature, path), text)
 	}
 }
 
 func printDefinitionsCodeCMD(c *cli.Context) {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	paths := c.GlobalStringSlice("pkgs")
 
-	definitions, _ := parseDir(dir)
-
-	defs := definitions.TestCode()
-
-	if Settings.PPrint {
-		defs = highlighter.Definition(defs)
+	if len(paths) == 0 { // nil or empty
+		paths = []string{"."}
 	}
 
-	Infof(defs)
+	code := definition.New(paths).TestCode()
+
+	if Settings.PPrint {
+		code = highlighter.Definition(code)
+	}
+
+	Infof(code)
 }
 
 // testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
 // Behaviours might be undefined, which will end up as red text in stdout if the context c has pretty print enabled.
 func testCMD(c *cli.Context) {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	paths := c.GlobalStringSlice("pkgs")
 
-	definitions, features := parseDir(dir)
-
-	if !Settings.Forensic {
-		defer definitions.Remove()
+	if len(paths) == 0 { // nil or empty
+		paths = []string{"."}
 	}
+
+	definitions := definition.New(paths)
+	features := feature.New(paths)
 
 	for _, file := range features {
 		fd, err := os.Open(file)
@@ -230,39 +248,23 @@ func testCMD(c *cli.Context) {
 	}
 }
 
+// unfoldPkg returns a set of step-definitions packages for
+// packages and subpackages found in paths.
+// Panics if error occurs.
+
 func scaffoldCMD(c *cli.Context) {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	paths := c.GlobalStringSlice("pkgs")
 
-	definitions, _ := parseDir(dir)
+	if len(paths) == 0 { // nil or empty
+		paths = []string{"."}
+	}
 
-	defs := definitions.ScaffoldCode()
+	code := definition.New(paths).Scaffold()
 
 	if Settings.PPrint {
-		defs = highlighter.Definition(defs)
+		code = highlighter.Definition(code)
 	}
 
-	Infof(defs)
-}
-
-func parseDir(path string) (definition.Definitions, []string) {
-	var err error
-	var list = feature.List{}
-	var defs = []io.Reader{}
-
-	if list, err = feature.ParseDir(path); err != nil {
-		Fatal(err.Error())
-	}
-
-	for _, def := range list.Definitions {
-		file, err := os.Open(def)
-		if err != nil {
-			Fatal(err.Error())
-		}
-
-		defs = append(defs, io.Reader(file))
-		defer file.Close()
-	}
-
-	return definition.NewDefinitions(defs), list.Features
+	Infof(code)
 }

@@ -17,5 +17,7 @@ var Settings struct {
 	Forensic   bool
 	PPrint     bool
 	CWD        string
+	GOPATH     string
+	GOSRCPATH  string
 	DefPattern string
 }

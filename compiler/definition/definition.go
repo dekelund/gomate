@@ -7,70 +7,27 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	. "gomate.io/gomate/global"
 )
 
-var emptyLineRexexp = regexp.MustCompile("^[\t ]*$")
-
-// Definition represents a parsed step definition, typically located in step_definition folder underneath features folder.
 type Definition struct {
-	imports []string
-	funcs   []string
-}
-
-type stepDefinitions []Definition
-
-type Definitions struct {
-	defs    stepDefinitions
-	tmpDir  string
+	pkgs    []string
+	tmpDir  string // TODO: Remove tmpDir and command
 	command string
-	removed bool
 }
 
-func (definitions stepDefinitions) TestCode() string {
-	return definitions.GenerateCode(snippet)
-}
+// Run takes a DSL written feature from io.Reader, compiles behaviour code and supplies the feature code
+// into executed behaviour code. After execution of the binary, the result are written to STDOUT. Method
+// respects global.PPrint to enable/disable pretty print i.e., colors enabled.
+func (definition Definition) Run(features io.Reader) {
+	(&definition).compile()
 
-func (definitions stepDefinitions) ScaffoldCode() string {
-	return definitions.GenerateCode(scaffold)
-}
-
-func (definitions stepDefinitions) GenerateCode(template string) string {
-	imports := []string{}
-	funcs := []string{}
-
-	for _, definition := range definitions {
-		imports = append(imports, definition.imports...)
-		funcs = append(funcs, definition.funcs...)
-	}
-
-	return fmt.Sprintf(template, strings.Join(imports, "\n"), strings.Join(funcs, "\n"))
-}
-
-// Code method generates source code based on step definitions.
-// The composited step definitions are located into a go function named setup, this function sets
-// up all definition just before the parsement of the feature file that has been supplied as first
-// argument on commandline. Second argument must be text string "true" or "false", that enables
-// and disables pretty print i.e., print to STDOUT with or without color.
-func (definitions Definitions) TestCode() string {
-	return definitions.defs.TestCode()
-}
-
-func (definitions Definitions) ScaffoldCode() string {
-	return definitions.defs.ScaffoldCode()
-}
-
-// Run takes a DSL written feature from io.Reader and supply the data into precompiled behaviour code.
-// After execution of the binary, the result are written to STDOUT. Method respects global.PPrint to
-// enable/disable pretty print i.e., colors enabled.
-func (definitions Definitions) Run(features io.Reader) {
-	if definitions.removed {
-		Info("Compiled behaviour binary file has been removed")
-		return
+	if !Settings.Forensic {
+		defer (&definition).remove()
 	}
 
 	featureLines, err := ioutil.ReadAll(features)
@@ -79,7 +36,7 @@ func (definitions Definitions) Run(features io.Reader) {
 		Fatal(err.Error())
 	}
 
-	gorun := exec.Command(definitions.command, strconv.FormatBool(Settings.PPrint))
+	gorun := exec.Command(definition.command, strconv.FormatBool(Settings.PPrint))
 	if stdin, err := gorun.StdinPipe(); err != nil {
 		Fatal(err.Error())
 	} else if n, err := stdin.Write(featureLines); err != nil {
@@ -97,65 +54,11 @@ func (definitions Definitions) Run(features io.Reader) {
 	}
 }
 
-// NewDefinition reads and parse "in" assuming that it contains content from a step definition file.
-// Lines defining package names are ommited from resulting Definition instance.
-func NewDefinition(in io.Reader) Definition {
-	code, err := ioutil.ReadAll(in)
-	if err != nil {
-		Fatal(err.Error())
-	}
-
-	imports := []string{}
-	funcs := []string{}
-
-	for _, row := range strings.Split(string(code), "\n") {
-		if strings.HasPrefix(row, "import ") {
-			imports = append(imports, row)
-		} else if strings.HasPrefix(row, "package ") {
-			continue // Package removed, "main" added later
-		} else if emptyLineRexexp.MatchString(row) {
-			continue // Empty lines removed
-		} else {
-			funcs = append(funcs, row)
-		}
-	}
-
-	return Definition{imports, funcs}
-}
-
-// NewDefinitions reads and parse "defs" assuming that each element contains content from a step definition file.
-// Lines defining package names are ommited from resulting Definition instance.
-//
-// NOTE: It's callers responsibility to call Remove method before Definitions instance are garbage
-// collected.
-func NewDefinitions(defs []io.Reader) Definitions {
-	definitions := stepDefinitions{}
-
-	for _, reader := range defs {
-		definitions = append(definitions, NewDefinition(reader))
-	}
-
-	dir, cmd := definitions.compile()
-	return Definitions{definitions, dir, cmd, false}
-}
-
-// Remove will remove temporary file containing the generated step definition
-// After this method has been called, it's no longer possible to execute Run
-// method.
-func (definitions Definitions) Remove() {
-	definitions.removed = true // Don't allow Run-calls from now on
-
-	if err := os.RemoveAll(definitions.tmpDir); err != nil {
-		Err(err.Error())
-		return
-	}
-}
-
-func (definitions stepDefinitions) compile() (string, string) {
+func (definition *Definition) compile() {
 	var err error
 	var output []byte
 
-	dir, testCode, testFile := definitions.store()
+	dir, testCode, testFile := definition.store()
 
 	goimport := exec.Command("goimports", "-w=true", testCode)
 	gofmt := exec.Command("go", "fmt", testCode)
@@ -173,20 +76,21 @@ func (definitions stepDefinitions) compile() (string, string) {
 		Err(string(output))
 	}
 
-	return dir, testFile
+	definition.tmpDir = dir
+	definition.command = testFile
 }
 
-func (definitions stepDefinitions) store() (dir, testCode, testFile string) {
+func (definition Definition) store() (dir, testCode, testFile string) {
 	var err error
 
 	if dir, err = ioutil.TempDir("", "brokenwing-test-"); err != nil {
 		Fatal(err.Error())
 	}
 
-	testCode = path.Join(dir, "definitions.go")
-	testFile = path.Join(dir, "definitions")
+	testCode = path.Join(dir, "definition.go")
+	testFile = path.Join(dir, "definition")
 
-	if ioutil.WriteFile(testCode, []byte(definitions.TestCode()), 0700|os.ModeTemporary); err != nil {
+	if ioutil.WriteFile(testCode, []byte(definition.TestCode()), 0700|os.ModeTemporary); err != nil {
 		Fatal(err.Error())
 	}
 
@@ -196,5 +100,83 @@ func (definitions stepDefinitions) store() (dir, testCode, testFile string) {
 		Debugf("Wrote '%s'", string(testCode))
 	}
 
+	return
+}
+
+// Remove will delete temporary file containing the generated step definition
+// After this method has been called, it's no longer possible to execute Run
+// method.
+func (definition *Definition) remove() {
+	if err := os.RemoveAll(definition.tmpDir); err != nil {
+		Err(err.Error())
+		return
+	}
+}
+
+func (definition Definition) imports() (imports string) {
+	if len(definition.pkgs) == 0 {
+		return
+	}
+
+	imports = "_ \"" + strings.Join(definition.pkgs, "\"\n\" _") + "\"\n"
+	return
+}
+
+// TestCode returns code used by gomate tool
+// to run test suits based on packages provided
+// when allocating Definition.
+func (definition Definition) TestCode() string {
+	return fmt.Sprintf(test, definition.imports())
+}
+
+// Scaffold returns code to be used as a baseline
+// when implementing code making use of optional
+// command patterns in definition files.
+func (definition Definition) Scaffold() string {
+	return fmt.Sprintf(scaffold, definition.imports())
+}
+
+// New allocates and returns definition struct
+// that correspond to subpackages fond under import
+// paths provided as argument.
+//
+// All packages provided in paths slice need to
+// be grand child in the file structure to, and thereby
+// relative to, GOPATH.
+//
+// Returned definition structure maps against
+// definitions written in step_definition folders.
+//
+// Note: step-definition folder name might be
+// changed based on Settings.DefPattern value.
+func New(paths []string) (defs Definition) {
+	pkgs := map[string]bool{}
+	paths = PKGPathToPath(Settings.CWD, Settings.GOSRCPATH, paths)
+
+	for _, path := range paths {
+		filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+			dir, file := filepath.Split(path)
+
+			if filepath.Ext(file) != ".go" {
+				return nil
+			}
+
+			if filepath.Base(dir) == Settings.DefPattern {
+				if pkg, err := filepath.Rel(Settings.GOSRCPATH, dir); err != nil {
+					panic(err.Error())
+				} else {
+					pkgs[pkg] = true
+				}
+			}
+
+			return nil
+		})
+	}
+
+	for pkg := range pkgs {
+		defs.pkgs = append(defs.pkgs, pkg)
+	}
+
+	(&defs).compile()
 	return
 }

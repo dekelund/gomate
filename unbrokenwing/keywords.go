@@ -14,7 +14,7 @@ func stepImplementation(step string, do func(Args) error) {
 			if r.MatchString(line) {
 				match = true
 				if !optout {
-					err = do(getArgs(r, step))
+					err = do(getArgs(r, line))
 				}
 			}
 		}

@@ -49,7 +49,7 @@ func main() {
 			panic(err.Error())
 		}
 
-		errors := ExecuteCMD(cmd)
+		errors := ExecuteCMD(cmd[:len(cmd)-1])
 
 		for _, err := range errors {
 			fmt.Println(err.Error())

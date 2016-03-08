@@ -33,9 +33,9 @@ func stepImplementation(step string, do func(Args) error, commands []string) {
 			continue
 		}
 
-		cmdRegister = append(cmdRegister, func(cmd string) (err error) {
+		cmdRegister = append(cmdRegister, func(cmd string) error {
 			if r.MatchString(cmd) {
-				err = do(getArgs(r, cmd))
+				return do(getArgs(r, cmd))
 			}
 			return nil
 		})

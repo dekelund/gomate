@@ -118,7 +118,7 @@ func (definition Definition) imports() (imports string) {
 		return
 	}
 
-	imports = "_ \"" + strings.Join(definition.pkgs, "\"\n\" _") + "\"\n"
+	imports = "_ \"" + strings.Join(definition.pkgs, "\"\n_ \"") + "\"\n"
 	return
 }
 

@@ -1,11 +1,15 @@
 package unbrokenwing
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 )
 
-type cmd func(string) error
+var didntMatch error = errors.New("Didn't match")
+
+type cmd func(string) (int, interface{}, error)
 
 var stepRegister = []func(string, bool) (match bool, err error){}
 var cmdRegister = []cmd{}
@@ -13,18 +17,24 @@ var cmdRegister = []cmd{}
 // Execute none or many matching commands
 // based on incomming command and step
 // definitions.
-func ExecuteCMD(cmd string) (errors []error) {
+func ExecuteCMD(cmd string) (cids []int, returns []interface{}, errors []error) {
 	for _, definition := range cmdRegister {
-		if err := definition(cmd); err != nil {
-			errors = append(errors, err)
+		id, r, err := definition(cmd)
+
+		if err == didntMatch {
+			continue
 		}
+
+		cids = append(cids, id)
+		errors = append(errors, err)
+		returns = append(returns, r)
 	}
 
 	return
 }
 
 // https://github.com/cucumber/cucumber/wiki/Given-When-Then
-func stepImplementation(step string, do func(Args) error, commands []string) {
+func stepImplementation(step string, do func(Args) (interface{}, error), commands []string) {
 	for _, cmdDef := range commands {
 		r, err := regexp.Compile(cmdDef)
 
@@ -33,11 +43,22 @@ func stepImplementation(step string, do func(Args) error, commands []string) {
 			continue
 		}
 
-		cmdRegister = append(cmdRegister, func(cmd string) error {
+		cmdRegister = append(cmdRegister, func(cmd string) (int, interface{}, error) {
+			var id int = -1
+
 			if r.MatchString(cmd) {
-				return do(getArgs(r, cmd))
+				args := getArgs(r, cmd)
+
+				if cid, ok := args["gomateCMDId"]; ok {
+					if i, err := strconv.Atoi(cid); err == nil {
+						id = i
+					}
+				}
+
+				result, err := do(args)
+				return id, result, err
 			}
-			return nil
+			return id, nil, didntMatch
 		})
 	}
 
@@ -49,7 +70,7 @@ func stepImplementation(step string, do func(Args) error, commands []string) {
 			if r.MatchString(line) {
 				match = true
 				if !optout {
-					err = do(getArgs(r, line))
+					_, err = do(getArgs(r, line))
 				}
 			}
 		}
@@ -63,7 +84,7 @@ func stepImplementation(step string, do func(Args) error, commands []string) {
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func Given(step string, do func(Args) error, commands ...string) (err error) {
+func Given(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -73,7 +94,7 @@ func Given(step string, do func(Args) error, commands ...string) (err error) {
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func When(step string, do func(Args) error, commands ...string) (err error) {
+func When(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -83,7 +104,7 @@ func When(step string, do func(Args) error, commands ...string) (err error) {
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func Then(step string, do func(Args) error, commands ...string) (err error) {
+func Then(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -93,7 +114,7 @@ func Then(step string, do func(Args) error, commands ...string) (err error) {
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func But(step string, do func(Args) error, commands ...string) (err error) {
+func But(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -103,7 +124,7 @@ func But(step string, do func(Args) error, commands ...string) (err error) {
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func And(step string, do func(Args) error, commands ...string) (err error) {
+func And(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }

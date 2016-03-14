@@ -17,20 +17,16 @@ var cmdRegister = []cmd{}
 // Execute none or many matching commands
 // based on incomming command and step
 // definitions.
-func ExecuteCMD(cmd string) (cids []int, returns []interface{}, errors []error) {
+func ExecuteCMD(cmd string) (int, interface{}, error) {
 	for _, definition := range cmdRegister {
-		id, r, err := definition(cmd)
-
-		if err == didntMatch {
+		if id, result, err := definition(cmd); err == didntMatch {
 			continue
+		} else {
+			return id, result, err
 		}
-
-		cids = append(cids, id)
-		errors = append(errors, err)
-		returns = append(returns, r)
 	}
 
-	return
+	return 0, nil, nil
 }
 
 // https://github.com/cucumber/cucumber/wiki/Given-When-Then

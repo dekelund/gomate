@@ -1,61 +1,81 @@
 package unbrokenwing
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 )
 
+const (
+	ParseError     = -32700
+	InvalidRequest = -32600
+	MethodNotFound = -32601
+	InvalidParams  = -32602
+	InternalError  = -32602
+)
+
+type RPCError struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+type RPCMessage struct {
+	// ID might be int, string and NULL according to JSON-RPC 2.0 , but we assume integer value
+	// TODO: Remove string assumption from values in Params
+	ID      int               `json:"id"`
+	JSONRPC string            `json:"jsonrpc"` // Should be "2.0"
+	Method  string            `json:"method"`
+	Params  map[string]string `json:"params"`
+}
+
+type RPCResponse struct {
+	ID      interface{} `json:"id"`
+	JSONRPC string      `json:"jsonrpc"` // Should be "2.0"
+	Error   *RPCError   `json:"error,omitempty"`
+	Result  interface{} `json:"result,omitempty"`
+}
+
 var didntMatch error = errors.New("Didn't match")
 
-type cmd func(string) (int, interface{}, error)
+type cmd func(Args) (interface{}, error)
 
 var stepRegister = []func(string, bool) (match bool, err error){}
-var cmdRegister = []cmd{}
+var cmdRegister = map[string]cmd{}
 
-// Execute none or many matching commands
-// based on incomming command and step
-// definitions.
-func ExecuteCMD(cmd string) (int, interface{}, error) {
-	for _, definition := range cmdRegister {
-		if id, result, err := definition(cmd); err == didntMatch {
-			continue
-		} else {
-			return id, result, err
-		}
+// Execute JSON-RPC parameterized method-command,
+// http://www.jsonrpc.org/specification
+func ExecuteCMD(jsondata string) (RPCResponse, error) {
+	var err error
+	var ok bool
+	var result interface{}
+	var do cmd
+
+	command := RPCMessage{}
+	if err = json.Unmarshal([]byte(jsondata), &command); err != nil {
+		err = errors.New("Can't parse message")
+		return RPCResponse{nil, "2.0", &RPCError{ParseError, err.Error(), nil}, nil}, err
 	}
 
-	return 0, nil, nil
+	command.Params["gomateCMDId"] = strconv.Itoa(command.ID)
+
+	if do, ok = cmdRegister[command.Method]; !ok {
+		err = errors.New("Method not found")
+		return RPCResponse{command.ID, "2.0", &RPCError{MethodNotFound, err.Error(), nil}, nil}, err
+	}
+
+	if result, err = do(Args(command.Params)); err != nil {
+		return RPCResponse{command.ID, "2.0", &RPCError{InternalError, err.Error(), nil}, nil}, err
+	}
+
+	return RPCResponse{command.ID, "2.0", nil, result}, nil
 }
 
 // https://github.com/cucumber/cucumber/wiki/Given-When-Then
-func stepImplementation(step string, do func(Args) (interface{}, error), commands []string) {
-	for _, cmdDef := range commands {
-		r, err := regexp.Compile(cmdDef)
-
-		if err != nil {
-			fmt.Printf("WARNING: %s", err)
-			continue
-		}
-
-		cmdRegister = append(cmdRegister, func(cmd string) (int, interface{}, error) {
-			var id int = -1
-
-			if r.MatchString(cmd) {
-				args := getArgs(r, cmd)
-
-				if cid, ok := args["gomateCMDId"]; ok {
-					if i, err := strconv.Atoi(cid); err == nil {
-						id = i
-					}
-				}
-
-				result, err := do(args)
-				return id, result, err
-			}
-			return id, nil, didntMatch
-		})
+func stepImplementation(step string, do cmd, commands []string) {
+	for _, command := range commands {
+		cmdRegister[command] = do
 	}
 
 	stepRegister = append(stepRegister, func(line string, optout bool) (match bool, err error) {

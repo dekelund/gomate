@@ -21,6 +21,10 @@ type RPCError struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+func (err *RPCError) Error() string {
+	return err.Message
+}
+
 type RPCMessage struct {
 	// ID might be int, string and NULL according to JSON-RPC 2.0 , but we assume integer value
 	// TODO: Remove string assumption from values in Params
@@ -46,27 +50,35 @@ var cmdRegister = map[string]cmd{}
 
 // Execute JSON-RPC parameterized method-command,
 // http://www.jsonrpc.org/specification
-func ExecuteCMD(jsondata string) (RPCResponse, error) {
-	var err error
+func ExecuteCMD(jsondata string) (RPCResponse, *RPCError) {
+	var err interface{}
 	var ok bool
 	var result interface{}
 	var do cmd
 
 	command := RPCMessage{}
 	if err = json.Unmarshal([]byte(jsondata), &command); err != nil {
-		err = errors.New("Can't parse message")
-		return RPCResponse{nil, "2.0", &RPCError{ParseError, err.Error(), nil}, nil}, err
+		err := errors.New("Can't parse message")
+		rpcErr := &RPCError{ParseError, err.Error(), nil}
+		return RPCResponse{nil, "2.0", rpcErr, nil}, rpcErr
 	}
 
 	command.Params["gomateCMDId"] = strconv.Itoa(command.ID)
 
 	if do, ok = cmdRegister[command.Method]; !ok {
-		err = errors.New("Method not found")
-		return RPCResponse{command.ID, "2.0", &RPCError{MethodNotFound, err.Error(), nil}, nil}, err
+		err := errors.New("Method not found")
+		rpcErr := &RPCError{MethodNotFound, err.Error(), nil}
+		return RPCResponse{command.ID, "2.0", rpcErr, nil}, rpcErr
 	}
 
 	if result, err = do(Args(command.Params)); err != nil {
-		return RPCResponse{command.ID, "2.0", &RPCError{InternalError, err.Error(), nil}, nil}, err
+		switch err := err.(type) {
+		case error:
+			rpcErr := &RPCError{InternalError, err.Error(), nil}
+			return RPCResponse{command.ID, "2.0", rpcErr, nil}, rpcErr
+		case *RPCError:
+			return RPCResponse{command.ID, "2.0", err, nil}, err
+		}
 	}
 
 	return RPCResponse{command.ID, "2.0", nil, result}, nil
@@ -100,7 +112,7 @@ func stepImplementation(step string, do cmd, commands []string) {
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func Given(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
+func Given(step string, do cmd, commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -110,7 +122,7 @@ func Given(step string, do func(Args) (interface{}, error), commands ...string) 
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func When(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
+func When(step string, do cmd, commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -120,7 +132,7 @@ func When(step string, do func(Args) (interface{}, error), commands ...string) (
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func Then(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
+func Then(step string, do cmd, commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -130,7 +142,7 @@ func Then(step string, do func(Args) (interface{}, error), commands ...string) (
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func But(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
+func But(step string, do cmd, commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }
@@ -140,7 +152,7 @@ func But(step string, do func(Args) (interface{}, error), commands ...string) (e
 // argument against scenario step in Gherkin language.
 // As a last alternative regular expressions matching
 // commands for implementation may be applied.
-func And(step string, do func(Args) (interface{}, error), commands ...string) (err error) {
+func And(step string, do cmd, commands ...string) (err error) {
 	stepImplementation(step, do, commands)
 	return
 }

@@ -51,7 +51,7 @@ var cmdRegister = map[string]cmd{}
 // Execute JSON-RPC parameterized method-command,
 // http://www.jsonrpc.org/specification
 func ExecuteCMD(jsondata string) (RPCResponse, *RPCError) {
-	var err interface{}
+	var err error
 	var ok bool
 	var result interface{}
 	var do cmd
@@ -72,13 +72,12 @@ func ExecuteCMD(jsondata string) (RPCResponse, *RPCError) {
 	}
 
 	if result, err = do(Args(command.Params)); err != nil {
-		switch err := err.(type) {
-		case error:
-			rpcErr := &RPCError{InternalError, err.Error(), nil}
-			return RPCResponse{command.ID, "2.0", rpcErr, nil}, rpcErr
-		case *RPCError:
+		if err, ok := err.(*RPCError); ok {
 			return RPCResponse{command.ID, "2.0", err, nil}, err
 		}
+
+		rpcErr := &RPCError{InternalError, err.Error(), nil}
+		return RPCResponse{command.ID, "2.0", rpcErr, nil}, rpcErr
 	}
 
 	return RPCResponse{command.ID, "2.0", nil, result}, nil

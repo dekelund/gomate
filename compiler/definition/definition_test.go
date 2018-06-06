@@ -79,7 +79,7 @@ import "strings"
 	// }
 }
 
-func ExampleRun() {
+func ExampleDefinitions_Run() {
 
 	definitions := definition.NewDefinitions([]io.Reader{
 		bytes.NewBufferString(`

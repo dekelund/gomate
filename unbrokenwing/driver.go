@@ -153,7 +153,7 @@ func (ts *suite) testFeature(feature Feature, t *testing.T) error {
 
 func (ts *suite) testScenario(scenario Scenario) error {
 	var notimplemented, pending, failure bool // TODO: We are not able to identify not implemented scenarios(?)
-	var toReturn error
+	var result error
 
 	scenarioText := buffer.Println(fmt.Sprintf("  Scenario: %s\n", scenario.Description))
 	scenarioText.Result = stdres.UNKNOWN
@@ -165,53 +165,45 @@ func (ts *suite) testScenario(scenario Scenario) error {
 
 		switch e := err.(type) {
 		case nil:
-			continue // Successfully executed, nothing to do
+			continue // No error
 		case PendingError:
 			pending = true
 		case NotImplError:
 			notimplemented = true
+
 			ts.missingImpl[e.snippet()] = true
 		default:
+			// Handle "real" errors
 			failure = true
-		}
 
-		switch e := toReturn.(type) {
-		case nil:
-			toReturn = err
-		case NotImplError:
-			toReturn = err
-		case PendingError:
-			switch e := toReturn.(type) {
-			case NotImplError:
-				_ = e
-				toReturn = err
+			if result == nil {
+				// First error found will be used as scenarios result
+				result = Failure(err.Error())
 			}
-		default:
-			_ = e
-			switch e := toReturn.(type) {
-			case NotImplError, PendingError:
-				_ = e
-				toReturn = err
-			}
-			failure = true
 		}
 	}
 
 	if failure {
 		scenarioText.Result = stdres.FAILURE
 		ts.failuresScenarios++
+
+		return result
 	} else if pending {
 		scenarioText.Result = stdres.PENDING
 		ts.pendingScenarios++
+
+		return Pending("")
 	} else if notimplemented { // TODO: We are not able to identify not implemented scenarios(?)
 		scenarioText.Result = stdres.UNKNOWN
 		ts.undefinedScenarios++
-	} else {
-		scenarioText.Result = stdres.SUCCESS
-		ts.successScenarios++
+
+		return NotImplError{}
 	}
 
-	return toReturn //NotImplemented(scenario)
+	scenarioText.Result = stdres.SUCCESS
+	ts.successScenarios++
+
+	return nil
 }
 
 func (ts *suite) testStep(step Step, optout bool) error {

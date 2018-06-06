@@ -8,7 +8,7 @@ import (
 	"gomate.io/gomate/compiler/definition"
 )
 
-func Example_NewDefinition() {
+func ExampleNewDefinition() {
 
 	buffer := bytes.NewBufferString(`
 package step_definitions
@@ -79,7 +79,7 @@ import "strings"
 	// }
 }
 
-func Example_Run() {
+func ExampleRun() {
 
 	definitions := definition.NewDefinitions([]io.Reader{
 		bytes.NewBufferString(`
@@ -97,7 +97,7 @@ And("^I fill in a new developer named hacker with password changeme$", func(args
 import "strings"
 
 	`),
-	})
+	}, false)
 
 	features := bytes.NewBufferString(`
 Feature: Manage users
@@ -130,7 +130,7 @@ Feature: Manage users
     And user hacker should have password changeme
 `)
 
-	definitions.Run(features)
+	definitions.Run(features, false)
 
 	// Output:
 	// Feature: Manage users

@@ -7,17 +7,21 @@ import (
 	"testing"
 )
 
+// Args provides data structure for arguments
+// supplied to the step definition.
 type Args map[string]string
 
-type Testable interface {
-	String() string
-}
-
+// Step corresponds to the a function related to
+// a Given, When and Then-step.
+//
+// Cmd correspons to one of following commands: Given, When, Then, But, And
+// Description contains the rest of the text that follows after the command.
 type Step struct {
 	Cmd         string
 	Description string
 }
 
+// String returns the original text before broken down to cmd and description.
 func (step Step) String() string {
 	return fmt.Sprintf("%s %s", step.Cmd, step.Description)
 }
@@ -87,21 +91,21 @@ type suite struct {
 	missingImpl map[string]bool
 }
 
-type ByKey []string
+type byKey []string
 
-func (a ByKey) Len() int           { return len(a) }
-func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByKey) Less(i, j int) bool { return a[i] < a[j] }
+func (a byKey) Len() int           { return len(a) }
+func (a byKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byKey) Less(i, j int) bool { return a[i] < a[j] }
 
-// Snippets generates behaviour snippets based on Gherkin scenario steps.
-func (ts suite) Snippets() string {
+// snippets generates behaviour snippets based on Gherkin scenario steps.
+func (ts suite) snippets() string {
 	keys := make([]string, 0, len(ts.missingImpl))
 
 	for k := range ts.missingImpl {
 		keys = append(keys, k)
 	}
 
-	sort.Sort(ByKey(keys))
+	sort.Sort(byKey(keys))
 
 	return strings.Join(keys, "\n")
 }

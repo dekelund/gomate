@@ -2,6 +2,8 @@ package highlighter
 
 import "strings"
 
+// Feature will syntax highlight gherkin code
+// by using colors for the shell.
 func Feature(def string) string {
 	def = strings.Replace(def, "Feature: ", red+"Feature: "+reset, -1)
 	def = strings.Replace(def, "Scenario: ", red+"Scenario: "+reset, -1)

@@ -120,14 +120,14 @@ func (ts *suite) Test(feature Feature, t *testing.T) error {
 }
 
 func (ts *suite) testFeature(feature Feature, t *testing.T) error {
-	ts.totalFeatures += 1
+	ts.totalFeatures++
 
 	featureText := buffer.Println(fmt.Sprintf("Feature: %s\n", feature.Name))
 	featureText.Result = stdres.SUCCESS // Assume succes until something else has been proven
 	defer func() {
 		buffer.Println(fmt.Sprintf("%s", ts)).Result = stdres.PLAIN
 		buffer.Println("\n    You can implement step definition for undefined steps with these snippets:").Result = stdres.PLAIN
-		buffer.Println(fmt.Sprintf("%s", ts.Snippets())).Result = stdres.INFO
+		buffer.Println(fmt.Sprintf("%s", ts.snippets())).Result = stdres.INFO
 		buffer.Flush()
 	}()
 
@@ -136,14 +136,14 @@ func (ts *suite) testFeature(feature Feature, t *testing.T) error {
 
 		switch err.(type) {
 		case nil:
-			ts.successFeatures += 1
+			ts.successFeatures++
 		case PendingError:
-			ts.pendingFeatures += 1
+			ts.pendingFeatures++
 			featureText.Result = stdres.PENDING
 		case NotImplError:
 			featureText.Result = stdres.UNKNOWN
 		default:
-			ts.failuresFeatures += 1
+			ts.failuresFeatures++
 			featureText.Result = stdres.FAILURE
 		}
 	}
@@ -157,7 +157,7 @@ func (ts *suite) testScenario(scenario Scenario) error {
 
 	scenarioText := buffer.Println(fmt.Sprintf("  Scenario: %s\n", scenario.Description))
 	scenarioText.Result = stdres.UNKNOWN
-	ts.totalScenarios += 1
+	ts.totalScenarios++
 
 	for _, step := range scenario.Steps {
 		optout := notimplemented || pending || failure
@@ -170,7 +170,7 @@ func (ts *suite) testScenario(scenario Scenario) error {
 			pending = true
 		case NotImplError:
 			notimplemented = true
-			ts.missingImpl[e.Snippet()] = true
+			ts.missingImpl[e.snippet()] = true
 		default:
 			failure = true
 		}
@@ -199,16 +199,16 @@ func (ts *suite) testScenario(scenario Scenario) error {
 
 	if failure {
 		scenarioText.Result = stdres.FAILURE
-		ts.failuresScenarios += 1
+		ts.failuresScenarios++
 	} else if pending {
 		scenarioText.Result = stdres.PENDING
-		ts.pendingScenarios += 1
+		ts.pendingScenarios++
 	} else if notimplemented { // TODO: We are not able to identify not implemented scenarios(?)
 		scenarioText.Result = stdres.UNKNOWN
-		ts.undefinedScenarios += 1
+		ts.undefinedScenarios++
 	} else {
 		scenarioText.Result = stdres.SUCCESS
-		ts.successScenarios += 1
+		ts.successScenarios++
 	}
 
 	return toReturn //NotImplemented(scenario)
@@ -221,7 +221,7 @@ func (ts *suite) testStep(step Step, optout bool) error {
 		buffer.Println("").Result = stdres.INFO
 	}()
 
-	ts.totalSteps += 1
+	ts.totalSteps++
 
 	if optout {
 		defer func() {
@@ -239,21 +239,21 @@ func (ts *suite) testStep(step Step, optout bool) error {
 		switch err.(type) {
 		case nil:
 			if optout {
-				ts.optoutSteps += 1
+				ts.optoutSteps++
 			} else {
-				ts.successSteps += 1
+				ts.successSteps++
 			}
 		case PendingError:
-			ts.pendingSteps += 1
+			ts.pendingSteps++
 			text.Result = stdres.PENDING
 		default:
-			ts.failuresSteps += 1
+			ts.failuresSteps++
 			text.Result = stdres.FAILURE
 		}
 
 		return err
 	}
 
-	ts.undefinedSteps += 1
+	ts.undefinedSteps++
 	return NotImplemented(step)
 }

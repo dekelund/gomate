@@ -2,6 +2,8 @@ package highlighter
 
 import "strings"
 
+// Definition will syntax highlight step definitions
+// by using colors for the shell.
 func Definition(def string) string {
 	def = strings.Replace(def, "package main", yellow+"package "+blue+"main"+reset, -1)
 	def = strings.Replace(def, "import ", yellow+"import"+reset+" ", -1)

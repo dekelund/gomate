@@ -1,6 +1,6 @@
 package definition
 
-var snippet string = `
+var snippet = `
 package main
 
 import (

@@ -10,7 +10,7 @@ import (
 	. "gomate.io/gomate/unbrokenwing"
 )
 
-func Example_NewDefinition() {
+func ExampleNewDefinition() {
 	stdres.DisableColor()
 
 	Given("^I'm successfully logged in as an admin in users pane$", func(args Args) error {

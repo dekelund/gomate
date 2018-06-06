@@ -14,21 +14,31 @@ import (
 
 	"gomate.io/gomate/compiler/definition"
 	"gomate.io/gomate/compiler/feature"
-	. "gomate.io/gomate/global"
 	"gomate.io/gomate/internal/highlighter"
+	"gomate.io/gomate/logging"
 )
 
 const (
-	PathSeparator = string(os.PathSeparator)
+	pathSeparator = string(os.PathSeparator)
 )
 
-var CWD string = "."
+var settings struct {
+	SysLog     logging.Settings
+	Forensic   bool
+	PPrint     bool
+	CWD        string
+	DefPattern string
+}
+
+var cwd = "."
 
 func init() {
+	settings.SysLog.Priority = syslog.LOG_INFO
+
 	var err error
 
-	if CWD, err = os.Getwd(); err != nil {
-		Fatal(err.Error())
+	if cwd, err = os.Getwd(); err != nil {
+		logging.Fatal(err.Error())
 	}
 }
 
@@ -85,7 +95,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "dir",
 			Value: ".",
-			Usage: "Relative path, to a feature-file or -directory (Current value: " + CWD + ").",
+			Usage: "Relative path, to a feature-file or -directory (Current value: " + cwd + ").",
 		},
 	}
 
@@ -124,25 +134,25 @@ func main() {
 }
 
 func setupGlobals(c *cli.Context) {
-	Settings.CWD = CWD
+	settings.CWD = cwd
 
-	Settings.SysLog.Active = c.GlobalBool("syslog")
-	Settings.SysLog.UDP = c.GlobalBool("syslog-udp")
-	Settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
-	Settings.SysLog.Tag = c.GlobalString("syslog-tag")
-	Settings.SysLog.Priority = syslog.Priority(c.GlobalInt("priority"))
+	settings.SysLog.Active = c.GlobalBool("syslog")
+	settings.SysLog.UDP = c.GlobalBool("syslog-udp")
+	settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
+	settings.SysLog.Tag = c.GlobalString("syslog-tag")
+	settings.SysLog.Priority = syslog.Priority(c.GlobalInt("priority"))
 
-	Settings.PPrint = c.GlobalBool("pretty")
-	Settings.Forensic = c.GlobalBool("forensic")
-	Settings.DefPattern = c.GlobalString("step-definitions")
+	settings.PPrint = c.GlobalBool("pretty")
+	settings.Forensic = c.GlobalBool("forensic")
+	settings.DefPattern = c.GlobalString("step-definitions")
 
-	if Settings.PPrint {
+	if settings.PPrint {
 		stdres.EnableColor()
 	} else {
 		stdres.DisableColor()
 	}
 
-	ReconfigureLogger()
+	logging.ReconfigureLogger(settings.SysLog)
 }
 
 func listFeatureFilesCMD(c *cli.Context) {
@@ -152,8 +162,8 @@ func listFeatureFilesCMD(c *cli.Context) {
 	_, features := parseDir(dir)
 
 	for i, feature := range features {
-		path := CWD + PathSeparator
-		Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
+		path := cwd + pathSeparator
+		logging.Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
 	}
 }
 
@@ -166,22 +176,22 @@ func listFeaturesCMD(c *cli.Context) {
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
 		if err != nil {
-			Fatal(err.Error())
+			logging.Fatal(err.Error())
 		}
 
 		bytes, err := ioutil.ReadAll(fileReader)
 		if err != nil {
-			Fatal(err.Error())
+			logging.Fatal(err.Error())
 		}
 
 		text := string(bytes)
 
-		if Settings.PPrint {
+		if settings.PPrint {
 			text = highlighter.Feature(text)
 		}
 
-		path := CWD + PathSeparator
-		Infof("\n# %s\n%s\n", strings.TrimPrefix(feature, path), text)
+		path := cwd + pathSeparator
+		logging.Infof("\n# %s\n%s\n", strings.TrimPrefix(feature, path), text)
 	}
 }
 
@@ -193,11 +203,11 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 
 	defs := definitions.Code()
 
-	if Settings.PPrint {
+	if settings.PPrint {
 		defs = highlighter.Definition(defs)
 	}
 
-	Infof(defs)
+	logging.Infof(defs)
 }
 
 // testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
@@ -208,18 +218,18 @@ func testCMD(c *cli.Context) {
 
 	definitions, features := parseDir(dir)
 
-	if !Settings.Forensic {
+	if !settings.Forensic {
 		defer definitions.Remove()
 	}
 
 	for _, file := range features {
 		fd, err := os.Open(file)
 		if err != nil {
-			Fatal(err.Error())
+			logging.Fatal(err.Error())
 		}
 		defer fd.Close()
 
-		definitions.Run(fd)
+		definitions.Run(fd, settings.PPrint)
 	}
 }
 
@@ -228,19 +238,19 @@ func parseDir(path string) (definition.Definitions, []string) {
 	var list = feature.List{}
 	var defs = []io.Reader{}
 
-	if list, err = feature.ParseDir(path); err != nil {
-		Fatal(err.Error())
+	if list, err = feature.ParseDir(path, settings.DefPattern); err != nil {
+		logging.Fatal(err.Error())
 	}
 
 	for _, def := range list.Definitions {
 		file, err := os.Open(def)
 		if err != nil {
-			Fatal(err.Error())
+			logging.Fatal(err.Error())
 		}
 
 		defs = append(defs, io.Reader(file))
 		defer file.Close()
 	}
 
-	return definition.NewDefinitions(defs), list.Features
+	return definition.NewDefinitions(defs, settings.Forensic), list.Features
 }

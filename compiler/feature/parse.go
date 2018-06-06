@@ -10,33 +10,33 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "gomate.io/gomate/global"
+	"gomate.io/gomate/logging"
 )
 
 func getFeaturePaths(path string) (list []string) {
 	dir, err := os.Open(path)
 
 	if err != nil {
-		Fatalf("Error opening input file:", err)
+		logging.Fatalf("Error opening input file: %s", err.Error())
 	}
 
 	defer dir.Close()
 
 	for names, err := dir.Readdirnames(10); err != io.EOF; names, err = dir.Readdirnames(10) {
 		if err != nil {
-			Fatalf("Error listing files:", err)
+			logging.Fatalf("Error listing files: %s", err.Error())
 		}
 
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".feature") {
-				Debug(fmt.Sprintf("Ignoring non-feature file: '%s'\n", string(name)))
+				logging.Debug(fmt.Sprintf("Ignoring non-feature file: '%s'\n", string(name)))
 				continue
 			}
 
 			fpath, err := filepath.Abs(filepath.Join(path, name))
 
 			if err != nil {
-				Fatal(err.Error())
+				logging.Fatal(err.Error())
 			}
 
 			list = append(list, fpath)
@@ -48,7 +48,7 @@ func getFeaturePaths(path string) (list []string) {
 
 func getDefinitonPaths(path string) (list []string) {
 	if _, err := isDir(path); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
 	dir, err := os.Open(path)
@@ -56,24 +56,24 @@ func getDefinitonPaths(path string) (list []string) {
 	defer dir.Close()
 
 	if err != nil {
-		Fatalf("Error opening input file:", err)
+		logging.Fatalf("Error opening input file: %s", err.Error())
 	}
 
 	for names, err := dir.Readdirnames(10); err != io.EOF; names, err = dir.Readdirnames(10) {
 		if err != nil {
-			Fatalf("Error listing files:", err)
+			logging.Fatalf("Error listing files: %s", err.Error())
 		}
 
 		for _, name := range names {
 			if !strings.HasSuffix(name, ".go") {
-				Debug(fmt.Sprintf("Ignoring non-definition file: '%s'\n", string(name)))
+				logging.Debug(fmt.Sprintf("Ignoring non-definition file: '%s'\n", string(name)))
 				continue
 			}
 
 			defPath, err := filepath.Abs(filepath.Join(path, name))
 
 			if err != nil {
-				Fatal(err.Error())
+				logging.Fatal(err.Error())
 			}
 
 			list = append(list, defPath)
@@ -94,14 +94,14 @@ type List struct {
 // defPattern represents definitions folders name, shall be located in features directory.
 // Function returns a list of features found in features file/dir and corresponding definitions.
 // An error will be returned if error occur, if not caller are responsible to call Definitions.Remove().
-func ParseDir(fpath string) (list List, err error) {
+func ParseDir(fpath, defPattern string) (list List, err error) {
 	var dir bool
 
 	if fpath, err = filepath.Abs(fpath); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
-	Debug(fmt.Sprintf("Going to test %s\n", fpath))
+	logging.Debug(fmt.Sprintf("Going to test %s\n", fpath))
 
 	if dir, err = isDir(fpath); err != nil {
 		return
@@ -113,7 +113,7 @@ func ParseDir(fpath string) (list List, err error) {
 	}
 
 	list.Definitions = getDefinitonPaths(
-		path.Join(fpath, Settings.DefPattern), //Dir with .go-definitions
+		path.Join(fpath, defPattern), //Dir with .go-definitions
 	)
 
 	return

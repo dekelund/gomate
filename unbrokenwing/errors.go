@@ -46,12 +46,12 @@ func Pending(reason string) error {
 // NotImplError are suitable to be returned
 // when unbrokenwings driver are not able
 // to find matching behaviour implementation.
-type NotImplError struct{ t Testable }
+type NotImplError struct{ t Step }
 
 // Generates a behaviour snippet
 // matching missing implementation.
-func (e NotImplError) Snippet() string {
-	t := e.t.(Step)
+func (e NotImplError) snippet() string {
+	t := e.t
 
 	r := regexp.MustCompile("\"([0-9+-]+)\"")
 	newRe := r.ReplaceAllString(t.Description, "\\\"([0-9+-]+)\\\"")
@@ -66,13 +66,13 @@ func (e NotImplError) Snippet() string {
 
 func (e NotImplError) Error() string {
 	intro := "You can implement step definition with following snippet:"
-	return fmt.Sprintf("Not Implemented: %s\n%s\n%s", e.t, intro, e.Snippet())
+	return fmt.Sprintf("Not Implemented: %s\n%s\n%s", e.t, intro, e.snippet())
 }
 
 // NotImplemented returns error that
 // are suitable to be returned when
 // unbrokenwings driver are not able
 // to find matching behaviour implementation.
-func NotImplemented(t Testable) error {
+func NotImplemented(t Step) error {
 	return NotImplError{t: t}
 }

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "gomate.io/gomate/global"
+	"gomate.io/gomate/logging"
 )
 
 var emptyLineRexexp = regexp.MustCompile("^[\t ]*$")
@@ -24,6 +24,8 @@ type Definition struct {
 
 type stepDefinitions []Definition
 
+// Definitions has been composed by multiple Definion instances, but does also contain
+// logic to decide what and where to execute, plus rules how to clean up binary result.
 type Definitions struct {
 	defs    stepDefinitions
 	tmpDir  string
@@ -68,42 +70,42 @@ func (definitions Definitions) Code() string {
 // Run takes a DSL written feature from io.Reader and supply the data into precompiled behaviour code.
 // After execution of the binary, the result are written to STDOUT. Method respects global.PPrint to
 // enable/disable pretty print i.e., colors enabled.
-func (definitions Definitions) Run(features io.Reader) {
+func (definitions Definitions) Run(features io.Reader, pprint bool) {
 	if definitions.removed {
-		Info("Compiled behaviour binary file has been removed")
+		logging.Info("Compiled behaviour binary file has been removed")
 		return
 	}
 
 	featureLines, err := ioutil.ReadAll(features)
 
 	if err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
-	gorun := exec.Command(definitions.command, strconv.FormatBool(Settings.PPrint))
+	gorun := exec.Command(definitions.command, strconv.FormatBool(pprint))
 	if stdin, err := gorun.StdinPipe(); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	} else if n, err := stdin.Write(featureLines); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	} else if n != len(featureLines) {
-		Fatal("Behaviour binary file was not able to read all defined features")
+		logging.Fatal("Behaviour binary file was not able to read all defined features")
 	} else if err := stdin.Close(); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
 	if output, err := gorun.CombinedOutput(); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	} else {
-		Info(string(output))
+		logging.Info(string(output))
 	}
 }
 
 // NewDefinition reads and parse "in" assuming that it contains content from a step definition file.
-// Lines defining package names are ommited from resulting Definition instance.
+// Lines defining package names are omitted from resulting Definition instance.
 func NewDefinition(in io.Reader) Definition {
 	code, err := ioutil.ReadAll(in)
 	if err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
 	imports := []string{}
@@ -125,18 +127,18 @@ func NewDefinition(in io.Reader) Definition {
 }
 
 // NewDefinitions reads and parse "defs" assuming that each element contains content from a step definition file.
-// Lines defining package names are ommited from resulting Definition instance.
+// Lines defining package names are omitted from resulting Definition instance.
 //
 // NOTE: It's callers responsibility to call Remove method before Definitions instance are garbage
 // collected.
-func NewDefinitions(defs []io.Reader) Definitions {
+func NewDefinitions(defs []io.Reader, forensic bool) Definitions {
 	definitions := stepDefinitions{}
 
 	for _, reader := range defs {
 		definitions = append(definitions, NewDefinition(reader))
 	}
 
-	dir, cmd := definitions.compile()
+	dir, cmd := definitions.compile(forensic)
 	return Definitions{definitions, dir, cmd, false}
 }
 
@@ -147,54 +149,54 @@ func (definitions Definitions) Remove() {
 	definitions.removed = true // Don't allow Run-calls from now on
 
 	if err := os.RemoveAll(definitions.tmpDir); err != nil {
-		Err(err.Error())
+		logging.Err(err.Error())
 		return
 	}
 }
 
-func (definitions stepDefinitions) compile() (string, string) {
+func (definitions stepDefinitions) compile(forensic bool) (string, string) {
 	var err error
 	var output []byte
 
-	dir, testCode, testFile := definitions.store()
+	dir, testCode, testFile := definitions.store(forensic)
 
 	goimport := exec.Command("goimports", "-w=true", testCode)
 	gofmt := exec.Command("go", "fmt", testCode)
 	gobuild := exec.Command("go", "build", "-o", testFile, testCode)
 
 	if err = goimport.Run(); err != nil {
-		Err(err.Error())
+		logging.Err(err.Error())
 	}
 
 	if err = gofmt.Run(); err != nil {
-		Err(err.Error())
+		logging.Err(err.Error())
 	}
 
 	if output, err = gobuild.CombinedOutput(); err != nil {
-		Err(string(output))
+		logging.Err(string(output))
 	}
 
 	return dir, testFile
 }
 
-func (definitions stepDefinitions) store() (dir, testCode, testFile string) {
+func (definitions stepDefinitions) store(forensic bool) (dir, testCode, testFile string) {
 	var err error
 
 	if dir, err = ioutil.TempDir("", "brokenwing-test-"); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
 	testCode = path.Join(dir, "definitions.go")
 	testFile = path.Join(dir, "definitions")
 
 	if ioutil.WriteFile(testCode, []byte(definitions.Code()), 0700|os.ModeTemporary); err != nil {
-		Fatal(err.Error())
+		logging.Fatal(err.Error())
 	}
 
-	if Settings.Forensic {
-		Noticef("Wrote '%s'. File will not be deleted, due to forensic mode.", string(testCode))
+	if forensic {
+		logging.Noticef("Wrote '%s'. File will not be deleted, due to forensic mode.", string(testCode))
 	} else {
-		Debugf("Wrote '%s'", string(testCode))
+		logging.Debugf("Wrote '%s'", string(testCode))
 	}
 
 	return

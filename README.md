@@ -1,4 +1,4 @@
-# gomate.io [![Go Report Card](https://goreportcard.com/badge/github.com/dekelund/gomate)](https://goreportcard.com/report/github.com/dekelund/gomate)
+# gomate.io [![Go Report Card](https://goreportcard.com/badge/github.com/dekelund/gomate)](https://goreportcard.com/report/github.com/dekelund/gomate) [![GoDoc](https://godoc.org/github.com/dekelund/gomate?status.svg)](https://godoc.org/github.com/dekelund/gomate)
 
 Use domain specific language (DSL) to verify your Go Lang Project.
 

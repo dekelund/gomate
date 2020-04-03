@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/syslog"
 
 	"gomate.io/gomate/compiler/definition"
+	"gomate.io/gomate/logging"
 )
 
 func ExampleNewDefinition() {
@@ -129,7 +131,7 @@ Feature: Manage users
     Then only one user-record with name hacker should exist
     And user hacker should have password changeme
 `)
-
+	logging.ReconfigureLogger(logging.Settings{Priority: syslog.LOG_INFO})
 	definitions.Run(features, false)
 
 	// Output:

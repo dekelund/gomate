@@ -9,8 +9,8 @@ import (
 
 	"log/syslog"
 
-	"github.com/codegangsta/cli"
 	"github.com/dekelund/stdres"
+	"github.com/urfave/cli"
 
 	"gomate.io/gomate/compiler/definition"
 	"gomate.io/gomate/compiler/feature"

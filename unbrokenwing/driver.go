@@ -125,9 +125,9 @@ func (ts *suite) testFeature(feature Feature, t *testing.T) error {
 	featureText := buffer.Println(fmt.Sprintf("Feature: %s\n", feature.Name))
 	featureText.Result = stdres.SUCCESS // Assume succes until something else has been proven
 	defer func() {
-		buffer.Println(fmt.Sprintf("%s", ts)).Result = stdres.PLAIN
+		buffer.Println(ts.String()).Result = stdres.PLAIN
 		buffer.Println("\n    You can implement step definition for undefined steps with these snippets:").Result = stdres.PLAIN
-		buffer.Println(fmt.Sprintf("%s", ts.snippets())).Result = stdres.INFO
+		buffer.Println(ts.snippets()).Result = stdres.INFO
 		buffer.Flush()
 	}()
 

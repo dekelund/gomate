@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -130,7 +131,9 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Printf("exiting due to unexpected error: %s", err)
+	}
 }
 
 func setupGlobals(c *cli.Context) {
@@ -173,6 +176,7 @@ func listFeaturesCMD(c *cli.Context) {
 
 	_, features := parseDir(dir)
 
+	// #nosec
 	for _, feature := range features {
 		fileReader, err := os.Open(feature)
 		if err != nil {
@@ -222,6 +226,7 @@ func testCMD(c *cli.Context) {
 		defer definitions.Remove()
 	}
 
+	// #nosec
 	for _, file := range features {
 		fd, err := os.Open(file)
 		if err != nil {
@@ -242,6 +247,7 @@ func parseDir(path string) (definition.Definitions, []string) {
 		logging.Fatal(err.Error())
 	}
 
+	// #nosec
 	for _, def := range list.Definitions {
 		file, err := os.Open(def)
 		if err != nil {

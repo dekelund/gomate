@@ -16,7 +16,7 @@ var log interface { //*syslog.Writer
 
 // Err logs error level messages to gomates default logger
 func Err(msg string) {
-	log.Err(msg)
+	_ = log.Err(msg)
 }
 
 // Errf logs formatted error level messages to gomates default logger
@@ -26,7 +26,7 @@ func Errf(msg string, args ...interface{}) {
 
 // Debug logs debug level messages to gomates default logger
 func Debug(msg string) {
-	log.Debug(msg)
+	_ = log.Debug(msg)
 }
 
 // Debugf logs formatted debug level messages to gomates default logger
@@ -36,7 +36,7 @@ func Debugf(msg string, args ...interface{}) {
 
 // Info logs info level messages to gomates default logger
 func Info(msg string) {
-	log.Info(msg)
+	_ = log.Info(msg)
 }
 
 // Infof logs formatted info level messages to gomates default logger
@@ -46,7 +46,7 @@ func Infof(msg string, args ...interface{}) {
 
 // Notice logs notice level messages to gomates default logger
 func Notice(msg string) {
-	log.Notice(msg)
+	_ = log.Notice(msg)
 }
 
 // Noticef logs formatted notice level messages to gomates default logger
@@ -61,13 +61,13 @@ func Panicf(reason string, args ...interface{}) {
 
 // Panic logs formatted panic level messages to gomates default logger
 func Panic(reason string) {
-	log.Crit(reason)
+	_ = log.Crit(reason)
 	panic(reason)
 }
 
 // Fatal logs fatal level messages to gomates default logger
 func Fatal(reason string) {
-	log.Crit(reason)
+	_ = log.Crit(reason)
 	os.Exit(1)
 }
 

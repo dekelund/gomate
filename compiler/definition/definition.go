@@ -82,7 +82,7 @@ func (definitions Definitions) Run(features io.Reader, pprint bool) {
 		logging.Fatal(err.Error())
 	}
 
-	gorun := exec.Command(definitions.command, strconv.FormatBool(pprint))
+	gorun := exec.Command(definitions.command, strconv.FormatBool(pprint)) // #nosec
 	if stdin, err := gorun.StdinPipe(); err != nil {
 		logging.Fatal(err.Error())
 	} else if n, err := stdin.Write(featureLines); err != nil {
@@ -160,9 +160,9 @@ func (definitions stepDefinitions) compile(forensic bool) (string, string) {
 
 	dir, testCode, testFile := definitions.store(forensic)
 
-	goimport := exec.Command("goimports", "-w=true", testCode)
-	gofmt := exec.Command("go", "fmt", testCode)
-	gobuild := exec.Command("go", "build", "-o", testFile, testCode)
+	goimport := exec.Command("goimports", "-w=true", testCode)       // #nosec
+	gofmt := exec.Command("go", "fmt", testCode)                     // #nosec
+	gobuild := exec.Command("go", "build", "-o", testFile, testCode) // #nosec
 
 	if err = goimport.Run(); err != nil {
 		logging.Err(err.Error())
@@ -189,7 +189,8 @@ func (definitions stepDefinitions) store(forensic bool) (dir, testCode, testFile
 	testCode = path.Join(dir, "definitions.go")
 	testFile = path.Join(dir, "definitions")
 
-	if ioutil.WriteFile(testCode, []byte(definitions.Code()), 0700|os.ModeTemporary); err != nil {
+	err = ioutil.WriteFile(testCode, []byte(definitions.Code()), 0700|os.ModeTemporary)
+	if err != nil {
 		logging.Fatal(err.Error())
 	}
 

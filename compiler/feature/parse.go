@@ -14,7 +14,7 @@ import (
 )
 
 func getFeaturePaths(path string) (list []string) {
-	dir, err := os.Open(path)
+	dir, err := os.Open(path) // #nosec
 
 	if err != nil {
 		logging.Fatalf("Error opening input file: %s", err.Error())
@@ -51,7 +51,7 @@ func getDefinitonPaths(path string) (list []string) {
 		logging.Fatal(err.Error())
 	}
 
-	dir, err := os.Open(path)
+	dir, err := os.Open(path) // #nosec
 
 	defer dir.Close()
 
@@ -120,7 +120,7 @@ func ParseDir(fpath, defPattern string) (list List, err error) {
 }
 
 func isDir(file string) (bool, error) {
-	inputFile, err := os.Open(file)
+	inputFile, err := os.Open(file) // #nosec
 	if err != nil {
 		err := errors.New("Error opening input file: " + file)
 		return false, err

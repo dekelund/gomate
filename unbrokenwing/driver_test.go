@@ -10,6 +10,7 @@ import (
 	. "gomate.io/gomate/unbrokenwing"
 )
 
+// #nosec
 func ExampleSuite_Test() {
 	stdres.DisableColor()
 

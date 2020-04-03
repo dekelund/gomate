@@ -16,7 +16,7 @@ func init() {
 // it might also change destination, for instance start logging to syslog-server
 // at remote host via TCP or UDP.
 func ReconfigureLogger(settings Settings) {
-	if settings.Active == false {
+	if !settings.Active {
 		log = &logger{settings}
 	} else if settings.RAddr == "localhost" {
 		log, _ = syslog.New(

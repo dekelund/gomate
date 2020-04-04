@@ -45,7 +45,7 @@ func init() {
 func main() {
 	app := cli.NewApp()
 	app.Name = "gomate"
-	app.Version = "v0.3.0"
+	app.Version = "v0.2.1"
 	app.Usage = "Run behaviour driven tests as Gherik features"
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{

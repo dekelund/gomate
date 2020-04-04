@@ -85,7 +85,6 @@ func scanScenario(regexpMap Args, scanner *bufio.Scanner) (scenario Scenario) {
 		line := scanner.Text()
 
 		if emptyLineRexexp.MatchString(line) {
-			//buffer.Println(fmt.Sprintf("WARNING: Can't parse step \"%s\"\n", line)).Result = stdres.FAILURE
 			continue
 		} else if stepRegexp.MatchString(line) {
 			scenario.Steps = append(scenario.Steps, scanStep(getArgs(stepRegexp, line), scanner))

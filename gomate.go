@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log/syslog"
 	"os"
 	"strconv"
 	"strings"
-
-	"log/syslog"
 
 	"github.com/dekelund/stdres"
 	"github.com/urfave/cli/v2"
@@ -134,11 +133,13 @@ func main() {
 func setupGlobals(c *cli.Context) {
 	settings.CWD = cwd
 
-	settings.SysLog.Active = c.Bool("syslog")
-	settings.SysLog.UDP = c.Bool("syslog-udp")
-	settings.SysLog.RAddr = c.String("syslog-raddr")
-	settings.SysLog.Tag = c.String("syslog-tag")
-	settings.SysLog.Priority = syslog.Priority(c.Int("priority"))
+	settings.SysLog = logging.Settings{
+		Active:   c.Bool("syslog"),
+		UDP:      c.Bool("syslog-udp"),
+		RAddr:    c.String("syslog-raddr"),
+		Tag:      c.String("syslog-tag"),
+		Priority: syslog.Priority(c.Int("priority")),
+	}
 
 	settings.PPrint = c.Bool("pretty")
 	settings.Forensic = c.Bool("forensic")

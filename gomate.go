@@ -11,7 +11,7 @@ import (
 	"log/syslog"
 
 	"github.com/dekelund/stdres"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"gomate.io/gomate/compiler/definition"
 	"gomate.io/gomate/compiler/feature"
@@ -46,28 +46,28 @@ func init() {
 func main() {
 	app := cli.NewApp()
 	app.Name = "gomate"
-	app.Version = "v0.2.0"
+	app.Version = "v0.3.0"
 	app.Usage = "Run behaviour driven tests as Gherik features"
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "syslog",
 			Usage: "Redirect STDOUT to SysLog server",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "syslog-udp",
 			Usage: "Use UDP instead of TCP",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "syslog-raddr",
 			Usage: "HOST/IP address to SysLog server",
 			Value: "localhost",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "syslog-tag",
 			Usage: "Tag output with specified text string",
 			Value: "gomate",
 		},
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name: "priority",
 			Usage: "Log priority, use bitwised values from /usr/include/sys/syslog.h e.g.," +
 				" LOG_EMERG=" + strconv.Itoa(int(syslog.LOG_EMERG)) +
@@ -80,56 +80,51 @@ func main() {
 				" LOG_DEBUG=" + strconv.Itoa(int(syslog.LOG_DEBUG)),
 			Value: int(syslog.LOG_INFO),
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "pretty",
 			Usage: "Print colorised result to STDOUT/STDERR",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "forensic",
 			Usage: "A kind of development mode, all generated files will be kept",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "step-definitions",
 			Value: "step_definitions",
 			Usage: "Definitions folder name, should be located in features folder",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "dir",
 			Value: ".",
 			Usage: "Relative path, to a feature-file or -directory (Current value: " + cwd + ").",
 		},
 	}
 
-	app.Commands = []cli.Command{
-		{
-			Name:    "feature-files",
-			Aliases: []string{},
-			Usage:   "List feature files to STDOUT",
-			Flags:   []cli.Flag{},
-			Action:  listFeatureFilesCMD,
-		},
-		{
-			Name:    "features",
-			Aliases: []string{},
-			Usage:   "List features to STDOUT",
-			Flags:   []cli.Flag{},
-			Action:  listFeaturesCMD,
-		},
-		{
-			Name:    "definitions",
-			Aliases: []string{"defs", "code"},
-			Usage:   "List behaviours to STDOUT",
-			Flags:   []cli.Flag{},
-			Action:  printDefinitionsCodeCMD,
-		},
-		{
-			Name:    "test",
-			Aliases: []string{"t"},
-			Usage:   "Tests either a test directory with features in it, or a .feature file",
-			Flags:   []cli.Flag{},
-			Action:  testCMD,
-		},
-	}
+	app.Commands = []*cli.Command{{
+		Name:    "feature-files",
+		Aliases: []string{},
+		Usage:   "List feature files to STDOUT",
+		Flags:   []cli.Flag{},
+		Action:  listFeatureFilesCMD,
+	}, {
+		Name:    "features",
+		Aliases: []string{},
+		Usage:   "List features to STDOUT",
+		Flags:   []cli.Flag{},
+		Action:  listFeaturesCMD,
+	}, {
+		Name:    "definitions",
+		Aliases: []string{"defs", "code"},
+		Usage:   "List behaviours to STDOUT",
+		Flags:   []cli.Flag{},
+		Action:  printDefinitionsCodeCMD,
+	}, {
+		Name:    "test",
+		Aliases: []string{"t"},
+		Usage:   "Tests either a test directory with features in it, or a .feature file",
+		Flags:   []cli.Flag{},
+		Action:  testCMD,
+	}}
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Printf("exiting due to unexpected error: %s", err)
@@ -139,15 +134,15 @@ func main() {
 func setupGlobals(c *cli.Context) {
 	settings.CWD = cwd
 
-	settings.SysLog.Active = c.GlobalBool("syslog")
-	settings.SysLog.UDP = c.GlobalBool("syslog-udp")
-	settings.SysLog.RAddr = c.GlobalString("syslog-raddr")
-	settings.SysLog.Tag = c.GlobalString("syslog-tag")
-	settings.SysLog.Priority = syslog.Priority(c.GlobalInt("priority"))
+	settings.SysLog.Active = c.Bool("syslog")
+	settings.SysLog.UDP = c.Bool("syslog-udp")
+	settings.SysLog.RAddr = c.String("syslog-raddr")
+	settings.SysLog.Tag = c.String("syslog-tag")
+	settings.SysLog.Priority = syslog.Priority(c.Int("priority"))
 
-	settings.PPrint = c.GlobalBool("pretty")
-	settings.Forensic = c.GlobalBool("forensic")
-	settings.DefPattern = c.GlobalString("step-definitions")
+	settings.PPrint = c.Bool("pretty")
+	settings.Forensic = c.Bool("forensic")
+	settings.DefPattern = c.String("step-definitions")
 
 	if settings.PPrint {
 		stdres.EnableColor()
@@ -158,9 +153,9 @@ func setupGlobals(c *cli.Context) {
 	logging.ReconfigureLogger(settings.SysLog)
 }
 
-func listFeatureFilesCMD(c *cli.Context) {
+func listFeatureFilesCMD(c *cli.Context) error {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	dir := c.String("dir")
 
 	_, features := parseDir(dir)
 
@@ -168,11 +163,13 @@ func listFeatureFilesCMD(c *cli.Context) {
 		path := cwd + pathSeparator
 		logging.Infof("\t%2d) %s\n", i, strings.TrimPrefix(feature, path))
 	}
+
+	return nil
 }
 
-func listFeaturesCMD(c *cli.Context) {
+func listFeaturesCMD(c *cli.Context) error {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	dir := c.String("dir")
 
 	_, features := parseDir(dir)
 
@@ -197,11 +194,13 @@ func listFeaturesCMD(c *cli.Context) {
 		path := cwd + pathSeparator
 		logging.Infof("\n# %s\n%s\n", strings.TrimPrefix(feature, path), text)
 	}
+
+	return nil
 }
 
-func printDefinitionsCodeCMD(c *cli.Context) {
+func printDefinitionsCodeCMD(c *cli.Context) error {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	dir := c.String("dir")
 
 	definitions, _ := parseDir(dir)
 
@@ -212,13 +211,15 @@ func printDefinitionsCodeCMD(c *cli.Context) {
 	}
 
 	logging.Infof(defs)
+
+	return nil
 }
 
 // testCMD search, compile and execute features defined in Gherik format where behaviours are defined in Go-Lang based files.
 // Behaviours might be undefined, which will end up as red text in stdout if the context c has pretty print enabled.
-func testCMD(c *cli.Context) {
+func testCMD(c *cli.Context) error {
 	setupGlobals(c)
-	dir := c.GlobalString("dir")
+	dir := c.String("dir")
 
 	definitions, features := parseDir(dir)
 
@@ -236,6 +237,8 @@ func testCMD(c *cli.Context) {
 
 		definitions.Run(fd, settings.PPrint)
 	}
+
+	return nil
 }
 
 func parseDir(path string) (definition.Definitions, []string) {
